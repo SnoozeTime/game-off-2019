@@ -1,0 +1,4 @@
+(
+    title: "Thief Academy",
+    dimensions: Some((800, 600)),
+)
