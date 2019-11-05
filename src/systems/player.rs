@@ -4,8 +4,7 @@ use amethyst::core::{
 };
 use amethyst::derive::SystemDesc;
 use amethyst::ecs::{
-    Component, Entity, Join, NullStorage, Read, ReadStorage, System, SystemData, World,
-    WriteStorage,
+    Component, Entity, Join, Read, ReadStorage, System, SystemData, VecStorage, World, WriteStorage,
 };
 use amethyst::input::{InputHandler, StringBindings};
 use nalgebra::{zero, Isometry2};
@@ -22,11 +21,32 @@ pub struct PlayerResource {
     pub player: Option<Entity>,
 }
 
+#[derive(Debug)]
+pub enum PlayerStatus {
+    /// The player is above ground ! and can move, shoot normally
+    Walking,
+
+    /// The player is falling from the arena. The game is over but this state is needed
+    /// for transition (animation...)
+    Falling,
+
+    /// Don't do anything, Just wait for game over.
+    GameOver,
+}
+
+impl Default for PlayerStatus {
+    fn default() -> Self {
+        PlayerStatus::Walking
+    }
+}
+
 /// Attached only to the player. Act as a tag to
 /// get it from the controller systems, or from
 #[derive(Debug, Component, Default)]
-#[storage(NullStorage)]
-pub struct Player;
+#[storage(VecStorage)]
+pub struct Player {
+    pub state: PlayerStatus,
+}
 
 #[derive(SystemDesc)]
 pub struct PlayerSystem;
@@ -44,32 +64,34 @@ impl<'s> System<'s> for PlayerSystem {
         &mut self,
         (mut transforms, players, mut animations, obstacles, input): Self::SystemData,
     ) {
-        for (_player, transform, animation) in (&players, &mut transforms, &mut animations).join() {
+        for (player, transform, animation) in (&players, &mut transforms, &mut animations).join() {
             // idle state.
-            animation.current_animation = None;
-            let movement_x = input.axis_value("x");
-            if let Some(mv_amount) = movement_x {
-                if mv_amount > 0.0 && self.can_move_right(transform, &obstacles) {
-                    let scaled_amount = 1.2 * mv_amount as f32;
-                    transform.prepend_translation_x(scaled_amount);
-                    animation.current_animation = Some("walk_right".to_string());
-                } else if mv_amount < 0.0 && self.can_move_left(transform, &obstacles) {
-                    let scaled_amount = 1.2 * mv_amount as f32;
-                    transform.prepend_translation_x(scaled_amount);
-                    animation.current_animation = Some("walk_left".to_string());
+            if let PlayerStatus::Walking = player.state {
+                animation.current_animation = None;
+                let movement_x = input.axis_value("x");
+                if let Some(mv_amount) = movement_x {
+                    if mv_amount > 0.0 && self.can_move_right(transform, &obstacles) {
+                        let scaled_amount = 1.2 * mv_amount as f32;
+                        transform.prepend_translation_x(scaled_amount);
+                        animation.current_animation = Some("walk_right".to_string());
+                    } else if mv_amount < 0.0 && self.can_move_left(transform, &obstacles) {
+                        let scaled_amount = 1.2 * mv_amount as f32;
+                        transform.prepend_translation_x(scaled_amount);
+                        animation.current_animation = Some("walk_left".to_string());
+                    }
                 }
-            }
 
-            let movement_y = input.axis_value("y");
-            if let Some(mv_amount) = movement_y {
-                if mv_amount > 0.0 && self.can_move_up(transform, &obstacles) {
-                    let scaled_amount = 1.2 * mv_amount as f32;
-                    transform.prepend_translation_y(scaled_amount);
-                    animation.current_animation = Some("walk_up".to_string());
-                } else if mv_amount < 0.0 && self.can_move_down(transform, &obstacles) {
-                    let scaled_amount = 1.2 * mv_amount as f32;
-                    transform.prepend_translation_y(scaled_amount);
-                    animation.current_animation = Some("walk_down".to_string());
+                let movement_y = input.axis_value("y");
+                if let Some(mv_amount) = movement_y {
+                    if mv_amount > 0.0 && self.can_move_up(transform, &obstacles) {
+                        let scaled_amount = 1.2 * mv_amount as f32;
+                        transform.prepend_translation_y(scaled_amount);
+                        animation.current_animation = Some("walk_up".to_string());
+                    } else if mv_amount < 0.0 && self.can_move_down(transform, &obstacles) {
+                        let scaled_amount = 1.2 * mv_amount as f32;
+                        transform.prepend_translation_y(scaled_amount);
+                        animation.current_animation = Some("walk_down".to_string());
+                    }
                 }
             }
         }

@@ -1,22 +1,27 @@
 //! Game state is the main state of the game. (where the player actually plays)
-use crate::components::*;
-use crate::event::{AppEvent, MyEvent};
-use crate::systems::{Animation, AnimationController, Bullet, Enemy, Player, PlayerResource};
 use crate::tilemap;
 use crate::util::{delete_hierarchy, load_spritesheet};
 use crate::z_layers::*;
+use crate::{
+    event::{AppEvent, MyEvent},
+    systems::{Animation, AnimationController, Bullet, Collider, Enemy, Player, PlayerResource},
+};
 use amethyst::{
-    assets::{AssetStorage, Handle, Loader},
-    core::{math::Vector2, transform::Transform},
+    assets::Handle,
+    core::{
+        math::{Point2, Vector2},
+        transform::Transform,
+    },
     ecs::prelude::Entity,
     input::{is_close_requested, is_key_down},
     prelude::*,
     renderer::{
         debug_drawing::{DebugLines, DebugLinesComponent, DebugLinesParams},
-        Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture,
+        Camera, SpriteRender, SpriteSheet,
     },
     winit::VirtualKeyCode,
 };
+use ncollide2d::bounding_volume::AABB;
 use std::collections::HashMap;
 use tracing::info;
 
@@ -34,7 +39,6 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
 
         world.register::<Player>();
         world.register::<Enemy>();
-        world.register::<Obstacle>();
 
         // Setup debug lines as a resource
         world.insert(DebugLines::new());
@@ -71,6 +75,7 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         *world.write_resource() = PlayerResource {
             player: Some(player),
         };
+
         add_bullet(world);
         initialize_camera(world);
     }
@@ -183,10 +188,16 @@ fn initialize_player(
     animation_controller
         .animations
         .insert("walk_up".to_string(), up_animation);
+
+    let collider = Collider {
+        bounding_volume: AABB::new(Point2::new(0.0, 0.0), Point2::new(16.0, 16.0)),
+    };
+
     world
         .create_entity()
         .with(transform)
-        .with(Player)
+        .with(Player::default())
+        .with(collider)
         .with(sprite_render)
         .with(animation_controller)
         .build()
@@ -194,12 +205,13 @@ fn initialize_player(
 
 fn add_bullet(world: &mut World) {
     let h = load_spritesheet("bullet", world);
-    let t = Transform::default();
+    let mut t = Transform::default();
+    t.append_translation_xyz(0.0, 0.0, 32.);
     world
         .create_entity()
         .with(t)
         .with(Bullet {
-            speed: 1.,
+            speed: 100.,
             direction: Vector2::new(1., 1.),
         })
         .with(SpriteRender {

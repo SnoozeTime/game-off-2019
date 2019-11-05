@@ -4,7 +4,7 @@
 use crate::components::Obstacle;
 use crate::states::ARENA_HEIGHT;
 use crate::{
-    systems::{Animation, AnimationController, Enemy},
+    systems::{Animation, AnimationController, Collider, Enemy, Walkable},
     util::load_spritesheet,
     z_layers::*,
 };
@@ -97,6 +97,7 @@ impl Tilemap {
         }
 
         tilemap.load_colliders(&map, world);
+        tilemap.load_walkable(&map, world);
         tilemap.load_props(&map, world, &first_gids, &tileset_names);
         tilemap.load_player_spawn(&map);
         tilemap.load_enemies(&map, world);
@@ -150,6 +151,44 @@ impl Tilemap {
                     .with(Enemy)
                     .with(sprite)
                     .build();
+            }
+        }
+    }
+
+    /// Load the colliders from the map. They are attached as objects in an
+    /// object layer called `colliders`
+    fn load_walkable(&mut self, map: &tiled::Map, world: &mut World) {
+        if let Some(ref group) = map
+            .object_groups
+            .iter()
+            .filter(|&g| g.name == String::from("walkable"))
+            .nth(0)
+        {
+            for obj in &group.objects {
+                // Just do rectangles for now.
+                if let tiled::ObjectShape::Rect { width, height, .. } = obj.shape {
+                    let (x, y) = convert_tiled_xy(obj.x, obj.y);
+                    let max = Point2::new(x + width, y);
+                    let min = Point2::new(x, y - height);
+                    let bounding_volume = AABB::new(min, max);
+                    println!("X {}, Y {}, MIN {:?}, MAX {:?}", x, y, min, max);
+
+                    let mut debug_line = DebugLinesComponent::with_capacity(10);
+                    debug_line.add_rectangle_2d(
+                        min,
+                        max,
+                        DEBUG_LAYER,
+                        Srgba::new(0.0, 0.0, 1.0, 0.5),
+                    );
+
+                    let entity = world
+                        .create_entity()
+                        .with(Collider { bounding_volume })
+                        .with(Walkable)
+                        .with(debug_line)
+                        .build();
+                    self.all_colliders.push(entity);
+                }
             }
         }
     }

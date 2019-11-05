@@ -13,7 +13,9 @@ use amethyst::{
 use thief_engine::{
     event::{MyEvent, MyEventReader},
     states,
-    systems::{AnimationSystem, BulletSystem, DialogSystem, EnemySystem, PlayerSystem},
+    systems::{
+        AnimationSystem, BulletSystem, DialogSystem, EnemySystem, PlayerSystem, WalkableSystem,
+    },
 };
 
 fn configure_logger() {
@@ -51,6 +53,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(input_bundle)?
         // this bundle allows us to 'find' the Buttons and other UI elements later on
         .with_bundle(UiBundle::<StringBindings>::new())?
+        // --------------------------------
         .with(
             PlayerSystem.pausable(states::RuntimeSystemState::Running),
             "player_system",
@@ -66,6 +69,11 @@ fn main() -> amethyst::Result<()> {
         .with(
             BulletSystem.pausable(states::RuntimeSystemState::Running),
             "bullet_system",
+            &[],
+        )
+        .with(
+            WalkableSystem.pausable(states::RuntimeSystemState::Running),
+            "walkable_system",
             &[],
         );
 
