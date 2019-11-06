@@ -21,9 +21,9 @@ use amethyst::{
     },
     winit::VirtualKeyCode,
 };
+use log::{debug, error, info};
 use ncollide2d::bounding_volume::AABB;
 use std::collections::HashMap;
-use tracing::info;
 
 use super::{MyTrans, RuntimeSystemState, ARENA_HEIGHT, ARENA_WIDTH};
 
@@ -90,6 +90,11 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         if let Some(handler) = self.ui_handle {
             delete_hierarchy(handler, data.world).expect("Failed to remove WelcomeScreen");
         }
+        let entities = Vec::from(data.world.get_mut::<tilemap::Tilemap>().unwrap().entities());
+
+        if let Err(e) = data.world.delete_entities(&entities) {
+            error!("{:?}", e);
+        }
         self.ui_handle = None;
     }
 
@@ -113,8 +118,10 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
                 // top of the stack to pause the gameplay systems.
                 if let AppEvent::NewDialog(sentences) = e {
                     Trans::Push(Box::new(crate::states::DialogState::new(sentences.clone())))
+                } else if let AppEvent::GameOver = e {
+                    Trans::Switch(Box::new(crate::states::GameOverState::default()))
                 } else {
-                    println!("{:?}", e);
+                    debug!("{:?}", e);
                     Trans::None
                 }
             }

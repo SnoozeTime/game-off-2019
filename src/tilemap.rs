@@ -16,10 +16,10 @@ use amethyst::{
     prelude::*,
     renderer::{debug_drawing::DebugLinesComponent, palette::Srgba, SpriteRender, SpriteSheet},
 };
+use log::warn;
 use ncollide2d::bounding_volume::AABB;
 use std::path::PathBuf;
 use tiled::parse_file;
-use tracing::warn;
 
 /// Contains all the tile entities and props
 /// All contains metadata (player spawn position, map name...)
@@ -35,11 +35,16 @@ pub struct Tilemap {
     pub all_props: Vec<Entity>,
 
     //pub all_enemies: Vec<Entity>,
+    pub all_entities: Vec<Entity>,
     /// Initial position for the player
     pub player_spawn: Option<Transform>,
 }
 
 impl Tilemap {
+    pub fn entities(&self) -> &[Entity] {
+        &self.all_entities
+    }
+
     /// Load the map from the tmx file.
     pub fn load(map_name: &str, world: &mut World) -> Tilemap {
         let mut tilemap = Tilemap::default();
@@ -81,7 +86,7 @@ impl Tilemap {
                             _ => 0.0,
                         };
                         transform.set_translation_xyz(x + 8.0, y + 8.0, z_layer);
-                        tilemap.all_tiles.push(
+                        tilemap.all_entities.push(
                             world
                                 .create_entity()
                                 .with(SpriteRender {
@@ -145,12 +150,14 @@ impl Tilemap {
                     sprite_sheet: spritesheet.clone(),
                     sprite_number: 0,
                 };
-                world
-                    .create_entity()
-                    .with(transform)
-                    .with(Enemy)
-                    .with(sprite)
-                    .build();
+                self.all_entities.push(
+                    world
+                        .create_entity()
+                        .with(transform)
+                        .with(Enemy)
+                        .with(sprite)
+                        .build(),
+                );
             }
         }
     }
@@ -187,7 +194,7 @@ impl Tilemap {
                         .with(Walkable)
                         .with(debug_line)
                         .build();
-                    self.all_colliders.push(entity);
+                    self.all_entities.push(entity);
                 }
             }
         }
@@ -224,7 +231,7 @@ impl Tilemap {
                         .with(Obstacle { aabb })
                         .with(debug_line)
                         .build();
-                    self.all_colliders.push(entity);
+                    self.all_entities.push(entity);
                 }
             }
         }
@@ -285,7 +292,7 @@ impl Tilemap {
                 }
 
                 let entity = entity_builder.build();
-                self.all_props.push(entity);
+                self.all_entities.push(entity);
             }
         }
     }

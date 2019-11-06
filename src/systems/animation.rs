@@ -4,8 +4,8 @@ use amethyst::ecs::{
     Component, DenseVecStorage, Join, Read, System, SystemData, World, WriteStorage,
 };
 use amethyst::renderer::SpriteRender;
+use log::error;
 use std::collections::HashMap;
-use tracing::error;
 
 #[derive(Debug, Default)]
 pub struct Animation {

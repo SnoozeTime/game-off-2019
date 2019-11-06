@@ -1,7 +1,9 @@
-//! Story state. at the beginning of the game, it will explain the background of the
-//! story before getting started with the tutorial.
+use crate::{
+    event::{AppEvent, MyEvent},
+    states::MyTrans,
+    util::delete_hierarchy,
+};
 use amethyst::{
-    core::shrev::EventChannel,
     ecs::prelude::Entity,
     input::{is_close_requested, is_key_down, is_mouse_button_down},
     prelude::*,
@@ -10,36 +12,23 @@ use amethyst::{
 };
 use log::info;
 
-use crate::event::{AppEvent, MyEvent};
-use crate::util::delete_hierarchy;
-
-#[derive(Default, Debug)]
-pub struct StoryState {
+/// Just display a text and then propose to start again or go back to main menu
+#[derive(Debug, Default)]
+pub struct GameOverState {
     ui_handle: Option<Entity>,
 }
 
-use super::MyTrans;
-
-impl State<GameData<'static, 'static>, MyEvent> for StoryState {
+impl State<GameData<'static, 'static>, MyEvent> for GameOverState {
     fn on_start(&mut self, data: StateData<GameData>) {
+        info!("Start gameover state");
         let world = data.world;
-        let events = world.get_mut::<EventChannel<AppEvent>>().unwrap();
-        events.single_write(AppEvent::NewDialog(vec![
-            "First".to_string(),
-            "second".to_string(),
-        ]));
         self.ui_handle =
             Some(world.exec(|mut creator: UiCreator<'_>| creator.create("ui/story.ron", ())));
     }
 
-    fn on_resume(&mut self, data: StateData<GameData>) {
-        let world = data.world;
-        *world.write_resource() = super::RuntimeSystemState::Running;
-    }
-
     fn on_stop(&mut self, data: StateData<GameData>) {
         if let Some(handler) = self.ui_handle {
-            delete_hierarchy(handler, data.world).expect("Failed to remove WelcomeScreen");
+            delete_hierarchy(handler, data.world).expect("Failed to remove GameOverScreen");
         }
         self.ui_handle = None;
     }

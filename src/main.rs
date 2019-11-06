@@ -18,13 +18,11 @@ use thief_engine::{
     },
 };
 
+use log::info;
+
 fn configure_logger() {
-    use tracing_log::LogTracer;
-    let sub = tracing_subscriber::FmtSubscriber::builder()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .finish();
-    LogTracer::builder().init().unwrap();
-    tracing::subscriber::set_global_default(sub).unwrap();
+    pretty_env_logger::init();
+    info!("Logger is setup correctly");
 }
 
 fn main() -> amethyst::Result<()> {

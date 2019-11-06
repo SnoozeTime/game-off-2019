@@ -11,6 +11,7 @@ use amethyst::{ui::UiEvent, winit::Event};
 pub enum AppEvent {
     NewDialog(Vec<String>),
     DialogOver,
+    GameOver,
 }
 
 #[derive(Debug, EventReader, Clone)]

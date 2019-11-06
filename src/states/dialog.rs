@@ -6,7 +6,7 @@ use amethyst::{
     prelude::*,
     winit::VirtualKeyCode,
 };
-use tracing::info;
+use log::{debug, info};
 
 use super::{MyTrans, RuntimeSystemState};
 use crate::systems::create_dialog;
@@ -30,7 +30,7 @@ impl DialogState {
 
 impl State<GameData<'static, 'static>, MyEvent> for DialogState {
     fn on_start(&mut self, data: StateData<GameData>) {
-        println!("Start dialog state");
+        debug!("Start dialog state");
         let world = data.world;
         // deactivate the gameplay systems.
         {
@@ -42,7 +42,7 @@ impl State<GameData<'static, 'static>, MyEvent> for DialogState {
     }
 
     fn on_stop(&mut self, data: StateData<GameData>) {
-        println!("Stop dialog state");
+        debug!("Stop dialog state");
         if let Some(handler) = self.dialog_handle {
             let _res = delete_hierarchy(handler, data.world);
         }

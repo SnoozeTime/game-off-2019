@@ -9,6 +9,9 @@ pub use dialog::DialogState;
 mod game;
 pub use game::GameState;
 
+mod gameover;
+pub use gameover::GameOverState;
+
 pub const ARENA_WIDTH: f32 = 800.0;
 pub const ARENA_HEIGHT: f32 = 600.0;
 
