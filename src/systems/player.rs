@@ -1,3 +1,6 @@
+use crate::{
+    components::Obstacle, config::PlayerConfig, event::AppEvent, systems::AnimationController,
+};
 use amethyst::core::{
     math::{Point3, Vector2, Vector3},
     shrev::EventChannel,
@@ -14,10 +17,6 @@ use log::{info, trace};
 use nalgebra::{zero, Isometry2};
 use ncollide2d::query::{Ray, RayCast};
 use std::cmp::Ordering;
-
-use crate::{components::Obstacle, event::AppEvent, systems::AnimationController};
-
-const FALL_ROT_SPEED: f32 = 45.0;
 
 fn get_scale(falling_duration: f32, elapsed_time: f32) -> f32 {
     ((falling_duration - elapsed_time) / falling_duration).max(0.0)
@@ -72,11 +71,21 @@ impl<'s> System<'s> for PlayerSystem {
         Read<'s, InputHandler<StringBindings>>,
         Read<'s, Time>,
         Write<'s, EventChannel<AppEvent>>,
+        Read<'s, PlayerConfig>,
     );
 
     fn run(
         &mut self,
-        (mut transforms, mut players, mut animations, obstacles, input, time, mut event): Self::SystemData,
+        (
+            mut transforms,
+            mut players,
+            mut animations,
+            obstacles,
+            input,
+            time,
+            mut event,
+            player_config,
+        ): Self::SystemData,
     ) {
         for (player, transform, animation) in
             (&mut players, &mut transforms, &mut animations).join()
@@ -84,13 +93,21 @@ impl<'s> System<'s> for PlayerSystem {
             // idle state.
             //
             match player.state {
-                PlayerStatus::Walking => self.player_walk(transform, animation, &input, &obstacles),
+                PlayerStatus::Walking => self.player_walk(
+                    transform,
+                    animation,
+                    &input,
+                    &obstacles,
+                    time.delta_seconds(),
+                    &player_config,
+                ),
                 PlayerStatus::Falling { .. } => self.player_fall(
                     player,
                     transform,
                     animation,
                     time.delta_seconds(),
                     &mut event,
+                    &player_config,
                 ),
                 _ => (),
             }
@@ -106,6 +123,7 @@ impl PlayerSystem {
         animation: &mut AnimationController,
         time_delta: f32,
         event: &mut Write<EventChannel<AppEvent>>,
+        player_config: &Read<PlayerConfig>,
     ) {
         // No animation, the only thing we do is to modify the transform to make it like the
         // character falls.
@@ -121,7 +139,7 @@ impl PlayerSystem {
 
             let scale = get_scale(*falling_duration, *elapsed_time);
             transform.set_scale(Vector3::new(scale, scale, scale));
-            transform.prepend_rotation_z_axis(FALL_ROT_SPEED * time_delta);
+            transform.prepend_rotation_z_axis(player_config.fall_rot_speed * time_delta);
             trace!("SCALE {}", scale);
             trace!("elapsed {} / {}", elapsed_time, falling_duration);
             has_fallen = *elapsed_time > *falling_duration;
@@ -141,32 +159,32 @@ impl PlayerSystem {
         animation: &mut AnimationController,
         input: &InputHandler<StringBindings>,
         obstacles: &ReadStorage<Obstacle>,
+        elapsed_time: f32,
+        player_config: &Read<PlayerConfig>,
     ) {
         animation.current_animation = None;
-        let movement_x = input.axis_value("x");
-        if let Some(mv_amount) = movement_x {
-            if mv_amount > 0.0 && self.can_move_right(transform, &obstacles) {
-                let scaled_amount = 1.2 * mv_amount as f32;
-                transform.prepend_translation_x(scaled_amount);
-                animation.current_animation = Some("walk_right".to_string());
-            } else if mv_amount < 0.0 && self.can_move_left(transform, &obstacles) {
-                let scaled_amount = 1.2 * mv_amount as f32;
-                transform.prepend_translation_x(scaled_amount);
-                animation.current_animation = Some("walk_left".to_string());
-            }
+        let movement_x = input.axis_value("x").unwrap_or(0.0);
+        let movement_y = input.axis_value("y").unwrap_or(0.0);
+
+        // Normalize the vector so that the player does not move faster
+        // diagonally...
+        let mvt = Vector2::new(movement_x, movement_y).normalize()
+            * player_config.player_speed
+            * elapsed_time;
+        if mvt.x > 0.0 && self.can_move_right(transform, &obstacles) {
+            transform.prepend_translation_x(mvt.x);
+            animation.current_animation = Some("walk_right".to_string());
+        } else if mvt.x < 0.0 && self.can_move_left(transform, &obstacles) {
+            transform.prepend_translation_x(mvt.x);
+            animation.current_animation = Some("walk_left".to_string());
         }
 
-        let movement_y = input.axis_value("y");
-        if let Some(mv_amount) = movement_y {
-            if mv_amount > 0.0 && self.can_move_up(transform, &obstacles) {
-                let scaled_amount = 1.2 * mv_amount as f32;
-                transform.prepend_translation_y(scaled_amount);
-                animation.current_animation = Some("walk_up".to_string());
-            } else if mv_amount < 0.0 && self.can_move_down(transform, &obstacles) {
-                let scaled_amount = 1.2 * mv_amount as f32;
-                transform.prepend_translation_y(scaled_amount);
-                animation.current_animation = Some("walk_down".to_string());
-            }
+        if mvt.y > 0.0 && self.can_move_up(transform, &obstacles) {
+            transform.prepend_translation_y(mvt.y);
+            animation.current_animation = Some("walk_up".to_string());
+        } else if mvt.y < 0.0 && self.can_move_down(transform, &obstacles) {
+            transform.prepend_translation_y(mvt.y);
+            animation.current_animation = Some("walk_down".to_string());
         }
     }
 

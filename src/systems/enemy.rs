@@ -1,7 +1,7 @@
 //! System that control the enemies
 //!
 use amethyst::{
-    core::{math::Vector3, SystemDesc, Transform},
+    core::{SystemDesc, Transform},
     derive::SystemDesc,
     ecs::{
         Component, Join, NullStorage, Read, ReadStorage, System, SystemData, World, WriteStorage,

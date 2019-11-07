@@ -178,7 +178,6 @@ impl Tilemap {
                     let max = Point2::new(x + width, y);
                     let min = Point2::new(x, y - height);
                     let bounding_volume = AABB::new(min, max);
-                    println!("X {}, Y {}, MIN {:?}, MAX {:?}", x, y, min, max);
 
                     let mut debug_line = DebugLinesComponent::with_capacity(10);
                     debug_line.add_rectangle_2d(
@@ -216,7 +215,6 @@ impl Tilemap {
                     let max = Point2::new(x + width, y);
                     let min = Point2::new(x, y - height);
                     let aabb = AABB::new(min, max);
-                    println!("X {}, Y {}, MIN {:?}, MAX {:?}", x, y, min, max);
 
                     let mut debug_line = DebugLinesComponent::with_capacity(10);
                     debug_line.add_rectangle_2d(

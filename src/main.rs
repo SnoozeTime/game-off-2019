@@ -11,6 +11,7 @@ use amethyst::{
     utils::application_root_dir,
 };
 use thief_engine::{
+    config::PlayerConfig,
     event::{MyEvent, MyEventReader},
     states,
     systems::{
@@ -30,6 +31,10 @@ fn main() -> amethyst::Result<()> {
     //amethyst::start_logger(Default::default());
     let app_root = application_root_dir()?;
 
+    let config_path = app_root.join("config").join("player.ron");
+
+    let player_config = PlayerConfig::load(&config_path);
+    info!("PLAYER CONFIG {:?}", player_config);
     let display_config_path = app_root.join("config").join("display.ron");
     let binding_path = app_root.join("config").join("bindings.ron");
     let input_bundle =
@@ -78,9 +83,9 @@ fn main() -> amethyst::Result<()> {
     let assets_dir = app_root.join("assets");
     let application = CoreApplication::<_, MyEvent, MyEventReader>::build(
         assets_dir,
-        states::GameState::default(),
+        states::GameOverState::default(),
     )?
-    //.with_resource(states::RuntimeSystemState::default())
+    .with_resource(player_config)
     .build(game_data);
 
     application?.run();

@@ -2,29 +2,17 @@
 //! to check whether they hit anything.
 //!
 use amethyst::{
-    assets::{Prefab, PrefabData, ProgressCounter},
     core::{math::Vector2, timing::Time, SystemDesc, Transform},
-    derive::PrefabData,
     derive::SystemDesc,
     ecs::{
-        Component, DenseVecStorage, Entity, Join, Read, ReadStorage, System, SystemData, World,
+        Component, DenseVecStorage, Join, Read, ReadStorage, System, SystemData, World,
         WriteStorage,
     },
-    error::Error,
-    renderer::sprite::prefab::SpriteScenePrefab,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize, PrefabData)]
-pub struct BulletPrefab {
-    sprite_scene: SpriteScenePrefab,
-    bullet: Bullet,
-    transform: Transform,
-}
-
 /// A basic bullet. Goes straight in a line with a given speed.
-#[derive(Debug, Clone, Component, PrefabData, Serialize, Deserialize)]
-#[prefab(Component)]
+#[derive(Debug, Clone, Component, Serialize, Deserialize)]
 #[storage(DenseVecStorage)]
 pub struct Bullet {
     /// Speed in unit/sec
