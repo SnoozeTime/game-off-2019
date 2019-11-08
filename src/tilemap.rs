@@ -25,15 +25,6 @@ use tiled::parse_file;
 /// All contains metadata (player spawn position, map name...)
 #[derive(Debug, Default)]
 pub struct Tilemap {
-    /// all the tiles (not props) of the tilemap
-    pub all_tiles: Vec<Entity>,
-
-    /// all colliders
-    pub all_colliders: Vec<Entity>,
-
-    /// all objects
-    pub all_props: Vec<Entity>,
-
     //pub all_enemies: Vec<Entity>,
     pub all_entities: Vec<Entity>,
     /// Initial position for the player

@@ -15,7 +15,8 @@ use thief_engine::{
     event::{MyEvent, MyEventReader},
     states,
     systems::{
-        AnimationSystem, BulletSystem, DialogSystem, EnemySystem, PlayerSystem, WalkableSystem,
+        AnimationSystem, BulletSystem, CollisionSystem, DialogSystem, EnemySystem,
+        MyCollisionWorld, PlayerSystem, WalkableSystem,
     },
 };
 
@@ -39,6 +40,11 @@ fn main() -> amethyst::Result<()> {
     let binding_path = app_root.join("config").join("bindings.ron");
     let input_bundle =
         InputBundle::<StringBindings>::new().with_bindings_from_file(binding_path)?;
+
+    // Collision world will keep track of all the collision objects. It will be
+    // added as a resource of the amethyst application
+    let collision_world = MyCollisionWorld::default();
+
     let game_data = GameDataBuilder::default()
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
@@ -78,6 +84,11 @@ fn main() -> amethyst::Result<()> {
             WalkableSystem.pausable(states::RuntimeSystemState::Running),
             "walkable_system",
             &[],
+        )
+        .with(
+            CollisionSystem.pausable(states::RuntimeSystemState::Running),
+            "collision_system",
+            &[],
         );
 
     let assets_dir = app_root.join("assets");
@@ -86,6 +97,7 @@ fn main() -> amethyst::Result<()> {
         states::GameOverState::default(),
     )?
     .with_resource(player_config)
+    .with_resource(collision_world)
     .build(game_data);
 
     application?.run();

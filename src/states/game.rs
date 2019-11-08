@@ -4,7 +4,10 @@ use crate::util::{delete_hierarchy, load_spritesheet};
 use crate::z_layers::*;
 use crate::{
     event::{AppEvent, MyEvent},
-    systems::{Animation, AnimationController, Bullet, Collider, Enemy, Player, PlayerResource},
+    systems::{
+        Animation, AnimationController, Bullet, Collider, Collider2, ColliderObjectType, Enemy,
+        MyCollisionWorld, Player, PlayerResource,
+    },
 };
 use amethyst::{
     assets::Handle,
@@ -72,6 +75,7 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
             }),
             sprite_sheet,
         );
+
         *world.write_resource() = PlayerResource {
             player: Some(player),
         };
@@ -200,21 +204,50 @@ fn initialize_player(
         bounding_volume: AABB::new(Point2::new(0.0, 0.0), Point2::new(16.0, 16.0)),
     };
 
-    world
+    let collider2 = {
+        let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
+        Collider2::new_rect(
+            Vector2::new(0.0, 0.0),
+            16.0,
+            16.0,
+            &mut collision_world.world,
+            ColliderObjectType::Player,
+        )
+    };
+
+    let entity = world
         .create_entity()
         .with(transform)
         .with(Player::default())
         .with(collider)
         .with(sprite_render)
         .with(animation_controller)
-        .build()
+        .with(collider2.clone())
+        .build();
+
+    let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
+    collider2.set_entity(&mut collision_world.world, entity);
+
+    entity
 }
 
 fn add_bullet(world: &mut World) {
     let h = load_spritesheet("bullet", world);
     let mut t = Transform::default();
     t.append_translation_xyz(0.0, 0.0, 32.);
-    world
+
+    let collider2 = {
+        let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
+        Collider2::new_rect(
+            Vector2::new(0.0, 0.0),
+            8.0,
+            8.0,
+            &mut collision_world.world,
+            ColliderObjectType::Bullet,
+        )
+    };
+
+    let entity = world
         .create_entity()
         .with(t)
         .with(Bullet {
@@ -225,5 +258,9 @@ fn add_bullet(world: &mut World) {
             sprite_sheet: h,
             sprite_number: 0,
         })
+        .with(collider2.clone())
         .build();
+
+    let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
+    collider2.set_entity(&mut collision_world.world, entity);
 }
