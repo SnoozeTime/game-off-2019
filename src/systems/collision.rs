@@ -2,17 +2,17 @@
 use crate::systems::{Player, PlayerStatus};
 use amethyst::{
     core::{
-        math::{zero, Isometry2, Point2, Vector2},
+        math::{zero, Isometry2, Vector2},
         SystemDesc, Transform,
     },
     derive::SystemDesc,
     ecs::{
-        Component, DenseVecStorage, Entity, Join, NullStorage, ReadStorage, System, SystemData,
-        VecStorage, World, Write, WriteStorage,
+        Component, DenseVecStorage, Entity, Join, NullStorage, Read, ReadStorage, System,
+        SystemData, World, Write, WriteStorage,
     },
 };
 use ncollide2d::{
-    bounding_volume::{bounding_volume::BoundingVolume, AABB},
+    bounding_volume::{self, bounding_volume::BoundingVolume},
     pipeline::{
         narrow_phase::ContactEvent,
         object::{CollisionGroups, CollisionObjectSlabHandle, GeometricQueryType},
@@ -33,14 +33,6 @@ impl Default for MyCollisionWorld {
             world: CollisionWorld::new(0.02),
         }
     }
-}
-
-/// Collider attached to an entity. Player and enemies should have one.
-/// Walkable area as well.
-#[derive(Debug, Component)]
-#[storage(VecStorage)]
-pub struct Collider {
-    pub bounding_volume: AABB<f32>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -68,11 +60,11 @@ impl Default for ColliderData {
 
 #[derive(Debug, Component, Copy, Clone)]
 #[storage(DenseVecStorage)]
-pub struct Collider2 {
+pub struct Collider {
     pub handle: CollisionObjectSlabHandle,
 }
 
-impl Collider2 {
+impl Collider {
     pub fn new_rect(
         position: Vector2<f32>,
         w: f32,
@@ -95,7 +87,7 @@ impl Collider2 {
                 ty: collider_type,
             },
         );
-        Collider2 { handle }
+        Collider { handle }
     }
 
     /// After creating the entity, we need to give it back to the collision object.
@@ -124,26 +116,33 @@ pub struct WalkableSystem;
 impl<'s> System<'s> for WalkableSystem {
     type SystemData = (
         WriteStorage<'s, Player>,
-        ReadStorage<'s, Transform>,
         ReadStorage<'s, Collider>,
         ReadStorage<'s, Walkable>,
+        Read<'s, MyCollisionWorld>,
     );
 
-    fn run(&mut self, (mut players, transforms, colliders, walkable_areas): Self::SystemData) {
-        for (player, t, collider) in (&mut players, &transforms, &colliders).join() {
+    fn run(
+        &mut self,
+        (mut players, colliders2, walkable_areas, collision_world): Self::SystemData,
+    ) {
+        for (player, collider) in (&mut players, &colliders2).join() {
             // If player is not walking, ignore the rest
             if let PlayerStatus::Walking = player.state {
                 let mut player_in_area = false;
-                for (_area, area_collider) in (&walkable_areas, &colliders).join() {
-                    // Now let's do the AABB testing.
-                    // TODO find a better way...
-                    let min: Point2<f32> = collider.bounding_volume.mins() + t.translation().xy();
-                    let max = collider.bounding_volume.maxs() + t.translation().xy();
-                    let translated_collider = AABB::new(min, max);
-                    if area_collider
-                        .bounding_volume
-                        .intersects(&translated_collider)
-                    {
+
+                let cob = collision_world
+                    .world
+                    .collision_object(collider.handle)
+                    .unwrap();
+                let aabb = bounding_volume::aabb(cob.shape().as_ref(), cob.position());
+                for (_area, area_collider) in (&walkable_areas, &colliders2).join() {
+                    let aob = collision_world
+                        .world
+                        .collision_object(area_collider.handle)
+                        .unwrap();
+                    let area_aabb = bounding_volume::aabb(aob.shape().as_ref(), aob.position());
+
+                    if area_aabb.intersects(&aabb) {
                         player_in_area = true;
                         break;
                     }
@@ -168,7 +167,7 @@ pub struct CollisionSystem;
 
 impl<'s> System<'s> for CollisionSystem {
     type SystemData = (
-        ReadStorage<'s, Collider2>,
+        ReadStorage<'s, Collider>,
         ReadStorage<'s, Transform>,
         Write<'s, MyCollisionWorld>,
     );
@@ -190,7 +189,7 @@ impl CollisionSystem {
     /// same entity.
     fn update_obj_positions(
         &self,
-        colliders: &ReadStorage<Collider2>,
+        colliders: &ReadStorage<Collider>,
         transforms: &ReadStorage<Transform>,
         collision_world: &mut Write<MyCollisionWorld>,
     ) {

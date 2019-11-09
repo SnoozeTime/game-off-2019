@@ -81,14 +81,14 @@ fn main() -> amethyst::Result<()> {
             &[],
         )
         .with(
-            WalkableSystem.pausable(states::RuntimeSystemState::Running),
-            "walkable_system",
-            &[],
-        )
-        .with(
             CollisionSystem.pausable(states::RuntimeSystemState::Running),
             "collision_system",
             &[],
+        )
+        .with(
+            WalkableSystem.pausable(states::RuntimeSystemState::Running),
+            "walkable_system",
+            &["collision_system"],
         );
 
     let assets_dir = app_root.join("assets");

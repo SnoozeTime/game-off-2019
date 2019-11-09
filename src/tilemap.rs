@@ -4,14 +4,20 @@
 use crate::components::Obstacle;
 use crate::states::ARENA_HEIGHT;
 use crate::{
-    systems::{Animation, AnimationController, Collider, Enemy, Walkable},
+    systems::{
+        Animation, AnimationController, Collider, ColliderObjectType, Enemy, MyCollisionWorld,
+        Walkable,
+    },
     util::load_spritesheet,
     z_layers::*,
 };
 use amethyst::utils::application_root_dir;
 use amethyst::{
     assets::Handle,
-    core::{math::geometry::Point2, transform::Transform},
+    core::{
+        math::{geometry::Point2, Vector2},
+        transform::Transform,
+    },
     ecs::Entity,
     prelude::*,
     renderer::{debug_drawing::DebugLinesComponent, palette::Srgba, SpriteRender, SpriteSheet},
@@ -168,8 +174,18 @@ impl Tilemap {
                     let (x, y) = convert_tiled_xy(obj.x, obj.y);
                     let max = Point2::new(x + width, y);
                     let min = Point2::new(x, y - height);
-                    let bounding_volume = AABB::new(min, max);
+                    let position = Vector2::new(x + width / 2.0, y - height / 2.0);
 
+                    let collider = {
+                        let collworld = world.get_mut::<MyCollisionWorld>().unwrap();
+                        Collider::new_rect(
+                            position,
+                            width,
+                            height,
+                            &mut collworld.world,
+                            ColliderObjectType::None,
+                        )
+                    };
                     let mut debug_line = DebugLinesComponent::with_capacity(10);
                     debug_line.add_rectangle_2d(
                         min,
@@ -180,10 +196,13 @@ impl Tilemap {
 
                     let entity = world
                         .create_entity()
-                        .with(Collider { bounding_volume })
                         .with(Walkable)
+                        .with(collider)
                         .with(debug_line)
                         .build();
+
+                    let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
+                    collider.set_entity(&mut collision_world.world, entity);
                     self.all_entities.push(entity);
                 }
             }

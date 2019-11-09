@@ -5,16 +5,13 @@ use crate::z_layers::*;
 use crate::{
     event::{AppEvent, MyEvent},
     systems::{
-        Animation, AnimationController, Bullet, Collider, Collider2, ColliderObjectType, Enemy,
+        Animation, AnimationController, Bullet, Collider, ColliderObjectType, Enemy,
         MyCollisionWorld, Player, PlayerResource,
     },
 };
 use amethyst::{
     assets::Handle,
-    core::{
-        math::{Point2, Vector2},
-        transform::Transform,
-    },
+    core::{math::Vector2, transform::Transform},
     ecs::prelude::Entity,
     input::{is_close_requested, is_key_down},
     prelude::*,
@@ -25,7 +22,6 @@ use amethyst::{
     winit::VirtualKeyCode,
 };
 use log::{debug, error, info};
-use ncollide2d::bounding_volume::AABB;
 use std::collections::HashMap;
 
 use super::{MyTrans, RuntimeSystemState, ARENA_HEIGHT, ARENA_WIDTH};
@@ -200,13 +196,9 @@ fn initialize_player(
         .animations
         .insert("walk_up".to_string(), up_animation);
 
-    let collider = Collider {
-        bounding_volume: AABB::new(Point2::new(0.0, 0.0), Point2::new(16.0, 16.0)),
-    };
-
     let collider2 = {
         let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
-        Collider2::new_rect(
+        Collider::new_rect(
             Vector2::new(0.0, 0.0),
             16.0,
             16.0,
@@ -219,7 +211,6 @@ fn initialize_player(
         .create_entity()
         .with(transform)
         .with(Player::default())
-        .with(collider)
         .with(sprite_render)
         .with(animation_controller)
         .with(collider2.clone())
@@ -238,7 +229,7 @@ fn add_bullet(world: &mut World) {
 
     let collider2 = {
         let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
-        Collider2::new_rect(
+        Collider::new_rect(
             Vector2::new(0.0, 0.0),
             8.0,
             8.0,
