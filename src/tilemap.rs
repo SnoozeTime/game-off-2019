@@ -151,7 +151,7 @@ impl Tilemap {
                     world
                         .create_entity()
                         .with(transform)
-                        .with(Enemy)
+                        .with(Enemy::default())
                         .with(sprite)
                         .build(),
                 );

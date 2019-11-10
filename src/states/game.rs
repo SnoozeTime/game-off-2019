@@ -5,8 +5,8 @@ use crate::z_layers::*;
 use crate::{
     event::{AppEvent, MyEvent},
     systems::{
-        Animation, AnimationController, Bullet, Collider, ColliderObjectType, Enemy,
-        MyCollisionWorld, Player, PlayerResource,
+        Animation, AnimationController, Bullet, Collider, ColliderObjectType, MyCollisionWorld,
+        Player, PlayerResource,
     },
 };
 use amethyst::{
@@ -25,7 +25,7 @@ use log::{debug, error, info};
 use std::collections::HashMap;
 
 use super::{MyTrans, RuntimeSystemState, ARENA_HEIGHT, ARENA_WIDTH};
-
+use crate::systems::BulletSpawner;
 #[derive(Default, Debug)]
 pub struct GameState {
     ui_handle: Option<Entity>,
@@ -37,7 +37,8 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         let world = data.world;
 
         world.register::<Player>();
-        world.register::<Enemy>();
+
+        *world.write_resource() = BulletSpawner::init(world);
 
         // Setup debug lines as a resource
         world.insert(DebugLines::new());
@@ -53,15 +54,6 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         let player_spawn = tilemap.player_spawn.clone();
         world.insert(tilemap);
 
-        //        let events = world.get_mut::<EventChannel<AppEvent>>().unwrap();
-        //        events.single_write(AppEvent::NewDialog(vec![
-        //            "First".to_string(),
-        //            "second".to_string(),
-        //            "third".to_string(),
-        //        ]));
-
-        //self.ui_handle =
-        //    Some(world.exec(|mut creator: UiCreator<'_>| creator.create("ui/welcome.ron", ())));
         let player = initialize_player(
             world,
             player_spawn.unwrap_or_else(|| {
@@ -76,7 +68,7 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
             player: Some(player),
         };
 
-        add_bullet(world);
+        //add_bullet(world);
         initialize_camera(world);
     }
 
@@ -222,36 +214,36 @@ fn initialize_player(
     entity
 }
 
-fn add_bullet(world: &mut World) {
-    let h = load_spritesheet("bullet", world);
-    let mut t = Transform::default();
-    t.append_translation_xyz(0.0, 0.0, 32.);
-
-    let collider2 = {
-        let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
-        Collider::new_rect(
-            Vector2::new(0.0, 0.0),
-            8.0,
-            8.0,
-            &mut collision_world.world,
-            ColliderObjectType::Bullet,
-        )
-    };
-
-    let entity = world
-        .create_entity()
-        .with(t)
-        .with(Bullet {
-            speed: 100.,
-            direction: Vector2::new(1., 1.),
-        })
-        .with(SpriteRender {
-            sprite_sheet: h,
-            sprite_number: 0,
-        })
-        .with(collider2.clone())
-        .build();
-
-    let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
-    collider2.set_entity(&mut collision_world.world, entity);
-}
+//fn add_bullet(world: &mut World) {
+//    let h = load_spritesheet("bullet", world);
+//    let mut t = Transform::default();
+//    t.append_translation_xyz(0.0, 0.0, 32.);
+//
+//    let collider2 = {
+//        let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
+//        Collider::new_rect(
+//            Vector2::new(0.0, 0.0),
+//            8.0,
+//            8.0,
+//            &mut collision_world.world,
+//            ColliderObjectType::Bullet,
+//        )
+//    };
+//
+//    let entity = world
+//        .create_entity()
+//        .with(t)
+//        .with(Bullet {
+//            speed: 100.,
+//            direction: Vector2::new(1., 1.),
+//        })
+//        .with(SpriteRender {
+//            sprite_sheet: h,
+//            sprite_number: 0,
+//        })
+//        .with(collider2.clone())
+//        .build();
+//
+//    let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
+//    collider2.set_entity(&mut collision_world.world, entity);
+//}

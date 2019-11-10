@@ -1,18 +1,36 @@
 //! System that control the enemies
 //!
 use amethyst::{
-    core::{SystemDesc, Transform},
+    core::{timing::Time, SystemDesc, Transform},
     derive::SystemDesc,
     ecs::{
-        Component, Join, NullStorage, Read, ReadStorage, System, SystemData, World, WriteStorage,
+        Component, Entities, Join, LazyUpdate, Read, System, SystemData, VecStorage, World, Write,
+        WriteStorage,
     },
 };
 
-use crate::systems::PlayerResource;
+use crate::systems::{BulletSpawner, MyCollisionWorld, PlayerResource};
+use log::error;
 
-#[derive(Debug, Default, Component)]
-#[storage(NullStorage)]
-pub struct Enemy;
+/// Enemy component.
+/// TODO enum with enemy types & behavior
+#[derive(Debug, Component)]
+#[storage(VecStorage)]
+pub struct Enemy {
+    /// Time before the enemy can shoot.
+    time_before_shooting: f32,
+    /// Number of sec the enemy will wait before shooting next.
+    reload_time: f32,
+}
+
+impl Default for Enemy {
+    fn default() -> Self {
+        Self {
+            time_before_shooting: 0.0,
+            reload_time: 1.0,
+        }
+    }
+}
 
 #[derive(SystemDesc)]
 pub struct EnemySystem;
@@ -20,11 +38,28 @@ pub struct EnemySystem;
 impl<'s> System<'s> for EnemySystem {
     type SystemData = (
         WriteStorage<'s, Transform>,
-        ReadStorage<'s, Enemy>,
+        WriteStorage<'s, Enemy>,
         Read<'s, PlayerResource>,
+        Read<'s, Time>,
+        Entities<'s>,
+        Read<'s, LazyUpdate>,
+        Read<'s, BulletSpawner>,
+        Write<'s, MyCollisionWorld>,
     );
 
-    fn run(&mut self, (mut transforms, enemies, player): Self::SystemData) {
+    fn run(
+        &mut self,
+        (
+            mut transforms,
+            mut enemies,
+            player,
+            time,
+            entities,
+            updater,
+            bullet_spawner,
+            mut collision,
+        ): Self::SystemData,
+    ) {
         if let Some(e) = player.player {
             let player_transform = transforms
                 .get(e)
@@ -32,13 +67,36 @@ impl<'s> System<'s> for EnemySystem {
                 .clone();
             let player_vec = player_transform.translation();
 
-            for (t, _enemy) in (&mut transforms, &enemies).join() {
+            for (t, enemy) in (&mut transforms, &mut enemies).join() {
+                let delta_time = time.delta_seconds();
                 let enemy_vec = t.translation();
 
-                let d = (player_vec - enemy_vec).normalize();
+                let direction = player_vec - enemy_vec;
 
-                t.prepend_translation_x(1.2 * d.x);
-                t.prepend_translation_y(1.2 * d.y);
+                let dist = direction.norm();
+                let d = direction.normalize();
+                if dist <= 150.0 {
+                    if enemy.time_before_shooting <= 0.0 {
+                        // shoot at the player :D
+                        if let Err(e) = bullet_spawner.spawn_bullet(
+                            &entities,
+                            &updater,
+                            &mut collision,
+                            0,
+                            *t.translation(),
+                            direction.xy(),
+                            100.0,
+                        ) {
+                            error!("Enemy cannot spawn bullet: {}", e);
+                        }
+                        enemy.time_before_shooting = enemy.reload_time;
+                    } else {
+                        enemy.time_before_shooting -= delta_time;
+                    }
+                } else {
+                    t.prepend_translation_x(1.2 * d.x);
+                    t.prepend_translation_y(1.2 * d.y);
+                }
             }
         }
     }

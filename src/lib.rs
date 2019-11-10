@@ -1,5 +1,6 @@
 pub mod components;
 pub mod config;
+pub mod error;
 pub mod event;
 pub mod states;
 pub mod systems;
