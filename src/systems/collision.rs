@@ -1,5 +1,6 @@
 //! Manage different sort of collision
 use crate::systems::{Player, PlayerStatus};
+use crate::util::delete_entity_with_collider;
 use amethyst::{
     core::{
         math::{zero, Isometry2, Vector2},
@@ -7,7 +8,7 @@ use amethyst::{
     },
     derive::SystemDesc,
     ecs::{
-        Component, DenseVecStorage, Entity, Join, NullStorage, Read, ReadStorage, System,
+        Component, DenseVecStorage, Entities, Entity, Join, NullStorage, Read, ReadStorage, System,
         SystemData, World, Write, WriteStorage,
     },
 };
@@ -21,7 +22,7 @@ use ncollide2d::{
     shape::{Cuboid, ShapeHandle},
 };
 
-use log::debug;
+use log::{debug, warn};
 
 pub struct MyCollisionWorld {
     pub world: CollisionWorld<f32, ColliderData>,
@@ -39,6 +40,7 @@ impl Default for MyCollisionWorld {
 pub enum ColliderObjectType {
     Bullet,
     Player,
+    Wall,
     None,
 }
 
@@ -170,16 +172,24 @@ impl<'s> System<'s> for CollisionSystem {
         ReadStorage<'s, Collider>,
         ReadStorage<'s, Transform>,
         Write<'s, MyCollisionWorld>,
+        Entities<'s>,
     );
 
-    fn run(&mut self, (colliders, transforms, mut collision_world): Self::SystemData) {
+    fn run(&mut self, (colliders, transforms, mut collision_world, entities): Self::SystemData) {
         // handle here all the collision events.
+        let mut to_remove = vec![];
         for event in collision_world.world.contact_events() {
-            self.handle_contact_event(&collision_world.world, event);
+            let mut to_remove_from_ev = self.handle_contact_event(&collision_world.world, event);
+            to_remove.append(&mut to_remove_from_ev);
         }
-
         // now update all the positions and update the world.
         self.update_obj_positions(&colliders, &transforms, &mut collision_world);
+
+        // Remove stuff to be destructed...
+        for entity in to_remove {
+            delete_entity_with_collider(entity, &colliders, &entities, &mut collision_world.world);
+        }
+
         collision_world.world.update();
     }
 }
@@ -194,11 +204,14 @@ impl CollisionSystem {
         collision_world: &mut Write<MyCollisionWorld>,
     ) {
         for (collider, transform) in (colliders, transforms).join() {
-            let obj = collision_world.world.get_mut(collider.handle).unwrap();
-            let translation_xy = transform.translation().xy();
-            let angle = transform.rotation().angle();
-            let isometry = Isometry2::new(translation_xy, angle);
-            obj.set_position(isometry);
+            if let Some(obj) = collision_world.world.get_mut(collider.handle) {
+                let translation_xy = transform.translation().xy();
+                let angle = transform.rotation().angle();
+                let isometry = Isometry2::new(translation_xy, angle);
+                obj.set_position(isometry);
+            } else {
+                warn!("Cannot find collision object for collider");
+            }
         }
     }
 
@@ -206,21 +219,50 @@ impl CollisionSystem {
         &self,
         world: &CollisionWorld<f32, ColliderData>,
         event: &ContactEvent<CollisionObjectSlabHandle>,
-    ) {
+    ) -> Vec<Entity> {
+        let mut to_remove = vec![];
         if let &ContactEvent::Started(collider1, collider2) = event {
-            // NOTE: real-life applications would avoid this systematic allocation.
             let obj1 = world.collision_object(collider1).unwrap();
             let obj2 = world.collision_object(collider2).unwrap();
 
             match (obj1.data().ty, obj2.data().ty) {
                 (ColliderObjectType::Player, ColliderObjectType::Bullet) => {
                     debug!("Object 1 (Player) collided with object 2 (Bullet)");
+                    to_remove.push(
+                        obj2.data()
+                            .entity
+                            .expect("Bullet should have an entity in its data"),
+                    );
+                    //entities.delete(obj2.data().ty);
                 }
                 (ColliderObjectType::Bullet, ColliderObjectType::Player) => {
                     debug!("Object 1 (Bullet) collided with object 2 (Player)");
+                    to_remove.push(
+                        obj1.data()
+                            .entity
+                            .expect("Bullet should have an entity in its data"),
+                    );
+                }
+                (ColliderObjectType::Bullet, ColliderObjectType::Wall) => {
+                    debug!("Bullet (1) collided with wall (2)");
+                    to_remove.push(
+                        obj1.data()
+                            .entity
+                            .expect("Bullet should have an entity in its data"),
+                    );
+                }
+                (ColliderObjectType::Wall, ColliderObjectType::Bullet) => {
+                    debug!("Bullet (1) collided with wall (1)");
+                    to_remove.push(
+                        obj2.data()
+                            .entity
+                            .expect("Bullet should have an entity in its data"),
+                    );
                 }
                 _ => (),
             }
         }
+
+        to_remove
     }
 }

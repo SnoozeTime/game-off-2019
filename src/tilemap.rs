@@ -226,6 +226,18 @@ impl Tilemap {
                     let min = Point2::new(x, y - height);
                     let aabb = AABB::new(min, max);
 
+                    let position = Vector2::new(x + width / 2.0, y - height / 2.0);
+                    let collider = {
+                        let collworld = world.get_mut::<MyCollisionWorld>().unwrap();
+                        Collider::new_rect(
+                            position,
+                            width,
+                            height,
+                            &mut collworld.world,
+                            ColliderObjectType::Wall,
+                        )
+                    };
+
                     let mut debug_line = DebugLinesComponent::with_capacity(10);
                     debug_line.add_rectangle_2d(
                         min,
@@ -238,7 +250,11 @@ impl Tilemap {
                         .create_entity()
                         .with(Obstacle { aabb })
                         .with(debug_line)
+                        .with(collider)
                         .build();
+
+                    let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
+                    collider.set_entity(&mut collision_world.world, entity);
                     self.all_entities.push(entity);
                 }
             }

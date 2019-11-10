@@ -4,9 +4,14 @@ use amethyst::{
     ecs::{
         error::WrongGeneration,
         prelude::{Entity, World, WorldExt},
+        Entities, ReadStorage,
     },
     renderer::{ImageFormat, SpriteSheet, SpriteSheetFormat, Texture},
 };
+
+use crate::systems::{Collider, ColliderData};
+use log::error;
+use ncollide2d::pipeline::world::CollisionWorld;
 
 use std::iter;
 
@@ -24,6 +29,24 @@ pub fn delete_hierarchy(root: Entity, world: &mut World) -> Result<(), WrongGene
             .collect::<Vec<Entity>>()
     };
     world.delete_entities(&entities)
+}
+
+/// Will remove an entity that has a collider. It needs to remove both the collision
+/// object in the collision world and the normal entity.
+pub fn delete_entity_with_collider(
+    entity: Entity,
+    colliders: &ReadStorage<Collider>,
+    entities: &Entities,
+    world: &mut CollisionWorld<f32, ColliderData>,
+) {
+    if let Some(collider) = colliders.get(entity) {
+        world.remove(&[collider.handle]);
+    }
+    // what can happen is a wrong generation error. make sure to display the error
+    // brightly but the game does not really know how to handle that...
+    if let Err(e) = entities.delete(entity) {
+        error!("{}", e);
+    }
 }
 
 /// Load the texture from the name

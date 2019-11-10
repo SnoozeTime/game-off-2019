@@ -10,4 +10,5 @@ mod bullet;
 mod collision;
 mod dialog;
 mod enemy;
+pub mod health;
 mod player;

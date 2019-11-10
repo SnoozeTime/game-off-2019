@@ -21,6 +21,8 @@ use amethyst::{
     },
     renderer::{SpriteRender, SpriteSheet},
 };
+
+#[allow(unused_imports)]
 use log::{debug, trace};
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +50,7 @@ impl<'s> System<'s> for BulletSystem {
     fn run(&mut self, (mut transforms, bullets, time): Self::SystemData) {
         for (bullet, t) in (&bullets, &mut transforms).join() {
             let delta_mvt = bullet.direction * bullet.speed * time.delta_seconds();
-            trace!("Will move bullet by {:?}", delta_mvt);
+            //trace!("Will move bullet by {:?}", delta_mvt);
 
             // alternative, could set the transform rotation to face the shooting direction.
             // and use the move along method

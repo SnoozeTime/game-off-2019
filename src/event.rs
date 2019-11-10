@@ -12,6 +12,7 @@ pub enum AppEvent {
     NewDialog(Vec<String>),
     DialogOver,
     GameOver,
+    PlayerHit,
 }
 
 #[derive(Debug, EventReader, Clone)]

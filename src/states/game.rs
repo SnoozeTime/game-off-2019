@@ -5,8 +5,8 @@ use crate::z_layers::*;
 use crate::{
     event::{AppEvent, MyEvent},
     systems::{
-        Animation, AnimationController, Bullet, Collider, ColliderObjectType, MyCollisionWorld,
-        Player, PlayerResource,
+        Animation, AnimationController, Collider, ColliderObjectType, MyCollisionWorld, Player,
+        PlayerResource,
     },
 };
 use amethyst::{
