@@ -9,6 +9,6 @@ mod animation;
 mod bullet;
 mod collision;
 mod dialog;
-mod enemy;
+pub mod enemy;
 pub mod health;
 mod player;

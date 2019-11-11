@@ -2,6 +2,7 @@ pub mod components;
 pub mod config;
 pub mod error;
 pub mod event;
+pub mod objects;
 pub mod states;
 pub mod systems;
 pub mod tilemap;

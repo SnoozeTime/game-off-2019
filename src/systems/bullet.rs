@@ -111,8 +111,9 @@ impl BulletSpawner {
                     8.0,
                     &mut collision.world,
                     ColliderObjectType::Bullet,
+                    Some(bullet),
                 );
-                collider.set_entity(&mut collision.world, bullet);
+                //collider.set_entddity(&mut collision.world, bullet);
                 collider
             };
 

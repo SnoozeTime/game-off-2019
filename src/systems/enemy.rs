@@ -12,6 +12,12 @@ use amethyst::{
 use crate::systems::{BulletSpawner, MyCollisionWorld, PlayerResource};
 use log::error;
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub enum EnemyType {
+    /// Most basic enemy. Follow and shoot.
+    Simple,
+}
+
 /// Enemy component.
 /// TODO enum with enemy types & behavior
 #[derive(Debug, Component)]

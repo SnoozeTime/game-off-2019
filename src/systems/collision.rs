@@ -36,12 +36,30 @@ impl Default for MyCollisionWorld {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+/// Determine what kind of object the collider is attached to. This is useful
+/// when resolving collisions.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ColliderObjectType {
     Bullet,
     Player,
     Wall,
+    Enemy,
     None,
+}
+
+impl ColliderObjectType {
+    /// Collision group are used to tell what collides with what.
+    /// For example, a bullet shot by an enemy should not collide with
+    /// other enemies.
+    pub fn get_collider_group(&self) -> usize {
+        match *self {
+            ColliderObjectType::Bullet => 1,
+            ColliderObjectType::Player => 2,
+            ColliderObjectType::Wall => 3,
+            ColliderObjectType::Enemy => 4,
+            ColliderObjectType::None => 5,
+        }
+    }
 }
 
 /// Collider component will have its entity as data.
@@ -67,16 +85,21 @@ pub struct Collider {
 }
 
 impl Collider {
+    /// Create a new collider that has a rectangle shape. If entity is None, the entity can be
+    /// associated as a second step using `set_entity`
     pub fn new_rect(
         position: Vector2<f32>,
         w: f32,
         h: f32,
         collision_world: &mut CollisionWorld<f32, ColliderData>,
         collider_type: ColliderObjectType,
+        entity: Option<Entity>,
     ) -> Self {
         let rect = ShapeHandle::new(Cuboid::new(Vector2::new(w / 2.0, h / 2.0)));
         let position = Isometry2::new(position, zero());
-        let group = CollisionGroups::new();
+        let mut group = CollisionGroups::new();
+        group.set_membership(&[collider_type.get_collider_group()]);
+
         let contacts_query = GeometricQueryType::Contacts(0.0, 0.0);
 
         let (handle, _) = collision_world.add(
@@ -85,7 +108,7 @@ impl Collider {
             group,
             contacts_query,
             ColliderData {
-                entity: None,
+                entity,
                 ty: collider_type,
             },
         );

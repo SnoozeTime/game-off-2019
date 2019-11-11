@@ -1,4 +1,5 @@
 (
         player_speed: 100.0,
         fall_rot_speed: 25.0
+        health: 5,
 )

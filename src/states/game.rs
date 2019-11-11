@@ -1,28 +1,24 @@
 //! Game state is the main state of the game. (where the player actually plays)
 use crate::tilemap;
-use crate::util::{delete_hierarchy, load_spritesheet};
+use crate::util::delete_hierarchy;
 use crate::z_layers::*;
 use crate::{
     event::{AppEvent, MyEvent},
-    systems::{
-        Animation, AnimationController, Collider, ColliderObjectType, MyCollisionWorld, Player,
-        PlayerResource,
-    },
+    objects::{enemy::EnemySpawner, player::create_player},
+    systems::PlayerResource,
 };
 use amethyst::{
-    assets::Handle,
-    core::{math::Vector2, transform::Transform},
+    core::transform::Transform,
     ecs::prelude::Entity,
     input::{is_close_requested, is_key_down},
     prelude::*,
     renderer::{
         debug_drawing::{DebugLines, DebugLinesComponent, DebugLinesParams},
-        Camera, SpriteRender, SpriteSheet,
+        Camera,
     },
     winit::VirtualKeyCode,
 };
 use log::{debug, error, info};
-use std::collections::HashMap;
 
 use super::{MyTrans, RuntimeSystemState, ARENA_HEIGHT, ARENA_WIDTH};
 use crate::systems::BulletSpawner;
@@ -36,9 +32,8 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
     fn on_start(&mut self, data: StateData<GameData>) {
         let world = data.world;
 
-        world.register::<Player>();
-
         *world.write_resource() = BulletSpawner::init(world);
+        *world.write_resource() = EnemySpawner::init(world);
 
         // Setup debug lines as a resource
         world.insert(DebugLines::new());
@@ -49,19 +44,17 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         // Activate the gameplay systems.
         *world.write_resource() = RuntimeSystemState::Running;
 
-        let sprite_sheet = load_spritesheet("Rogue", world);
         let tilemap = tilemap::Tilemap::load("arena.tmx", world);
         let player_spawn = tilemap.player_spawn.clone();
         world.insert(tilemap);
 
-        let player = initialize_player(
+        let player = create_player(
             world,
             player_spawn.unwrap_or_else(|| {
                 let mut transform = Transform::default();
                 transform.set_translation_xyz(50.0, 50.0, CHARACTERS_LAYER);
                 transform
             }),
-            sprite_sheet,
         );
 
         *world.write_resource() = PlayerResource {
@@ -132,118 +125,3 @@ fn initialize_camera(world: &mut World) {
         .with(transform)
         .build();
 }
-
-/// Will place the player at the start of the level.
-fn initialize_player(
-    world: &mut World,
-    transform: Transform,
-    sprite_sheet: Handle<SpriteSheet>,
-) -> Entity {
-    let sprite_render = SpriteRender {
-        sprite_sheet: sprite_sheet.clone(),
-        sprite_number: 0,
-    };
-
-    // Basic animation for the player
-    // down left right up
-    let down_animation = Animation {
-        sprite_indexes: vec![0, 1, 2, 3],
-        current_index: 0,
-        step_duration: 0.3,
-        elapsed_time: 0.0,
-    };
-    let left_animation = Animation {
-        sprite_indexes: vec![4, 5, 6, 7],
-        current_index: 0,
-        step_duration: 0.3,
-        elapsed_time: 0.0,
-    };
-    let right_animation = Animation {
-        sprite_indexes: vec![8, 9, 10, 11],
-        current_index: 0,
-        step_duration: 0.3,
-        elapsed_time: 0.0,
-    };
-    let up_animation = Animation {
-        sprite_indexes: vec![12, 13, 14, 15],
-        current_index: 0,
-        step_duration: 0.3,
-        elapsed_time: 0.0,
-    };
-
-    let mut animation_controller = AnimationController {
-        animations: HashMap::new(),
-        current_animation: None,
-    };
-    animation_controller
-        .animations
-        .insert("walk_down".to_string(), down_animation);
-    animation_controller
-        .animations
-        .insert("walk_left".to_string(), left_animation);
-    animation_controller
-        .animations
-        .insert("walk_right".to_string(), right_animation);
-    animation_controller
-        .animations
-        .insert("walk_up".to_string(), up_animation);
-
-    let collider2 = {
-        let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
-        Collider::new_rect(
-            Vector2::new(0.0, 0.0),
-            16.0,
-            16.0,
-            &mut collision_world.world,
-            ColliderObjectType::Player,
-        )
-    };
-
-    let entity = world
-        .create_entity()
-        .with(transform)
-        .with(Player::default())
-        .with(sprite_render)
-        .with(animation_controller)
-        .with(collider2.clone())
-        .build();
-
-    let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
-    collider2.set_entity(&mut collision_world.world, entity);
-
-    entity
-}
-
-//fn add_bullet(world: &mut World) {
-//    let h = load_spritesheet("bullet", world);
-//    let mut t = Transform::default();
-//    t.append_translation_xyz(0.0, 0.0, 32.);
-//
-//    let collider2 = {
-//        let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
-//        Collider::new_rect(
-//            Vector2::new(0.0, 0.0),
-//            8.0,
-//            8.0,
-//            &mut collision_world.world,
-//            ColliderObjectType::Bullet,
-//        )
-//    };
-//
-//    let entity = world
-//        .create_entity()
-//        .with(t)
-//        .with(Bullet {
-//            speed: 100.,
-//            direction: Vector2::new(1., 1.),
-//        })
-//        .with(SpriteRender {
-//            sprite_sheet: h,
-//            sprite_number: 0,
-//        })
-//        .with(collider2.clone())
-//        .build();
-//
-//    let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
-//    collider2.set_entity(&mut collision_world.world, entity);
-//}

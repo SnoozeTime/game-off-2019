@@ -4,9 +4,10 @@
 use crate::components::Obstacle;
 use crate::states::ARENA_HEIGHT;
 use crate::{
+    objects::enemy::EnemySpawner,
     systems::{
-        Animation, AnimationController, Collider, ColliderObjectType, Enemy, MyCollisionWorld,
-        Walkable,
+        enemy::EnemyType, Animation, AnimationController, Collider, ColliderObjectType,
+        MyCollisionWorld, Walkable,
     },
     util::load_spritesheet,
     z_layers::*,
@@ -18,7 +19,7 @@ use amethyst::{
         math::{geometry::Point2, Vector2},
         transform::Transform,
     },
-    ecs::Entity,
+    ecs::{Entities, Entity, LazyUpdate, Read, Write},
     prelude::*,
     renderer::{debug_drawing::DebugLinesComponent, palette::Srgba, SpriteRender, SpriteSheet},
 };
@@ -137,23 +138,28 @@ impl Tilemap {
             .filter(|&g| g.name == String::from("enemy"))
             .nth(0)
         {
-            let spritesheet = load_spritesheet("rectangle", world);
             for obj in &group.objects {
                 let (x, y) = convert_tiled_xy(obj.x, obj.y);
                 let mut transform = Transform::default();
                 transform.set_translation_xyz(x + 8.0, y + 8.0, PROPS_LAYER);
 
-                let sprite = SpriteRender {
-                    sprite_sheet: spritesheet.clone(),
-                    sprite_number: 0,
-                };
-                self.all_entities.push(
-                    world
-                        .create_entity()
-                        .with(transform)
-                        .with(Enemy::default())
-                        .with(sprite)
-                        .build(),
+                world.exec(
+                    |(entities, updater, mut collision, spawner): (
+                        Entities,
+                        Read<LazyUpdate>,
+                        Write<MyCollisionWorld>,
+                        Read<EnemySpawner>,
+                    )| {
+                        if let Some(entity) = spawner.spawn_enemy(
+                            &entities,
+                            &updater,
+                            &mut collision,
+                            EnemyType::Simple,
+                            transform,
+                        ) {
+                            self.all_entities.push(entity);
+                        }
+                    },
                 );
             }
         }
@@ -184,6 +190,7 @@ impl Tilemap {
                             height,
                             &mut collworld.world,
                             ColliderObjectType::None,
+                            None,
                         )
                     };
                     let mut debug_line = DebugLinesComponent::with_capacity(10);
@@ -235,6 +242,7 @@ impl Tilemap {
                             height,
                             &mut collworld.world,
                             ColliderObjectType::Wall,
+                            None,
                         )
                     };
 
