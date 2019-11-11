@@ -32,8 +32,12 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
     fn on_start(&mut self, data: StateData<GameData>) {
         let world = data.world;
 
-        *world.write_resource() = BulletSpawner::init(world);
-        *world.write_resource() = EnemySpawner::init(world);
+        debug!("Add Bullet spawner resource");
+        let bullet_spawner = BulletSpawner::init(world);
+        world.insert(bullet_spawner);
+        let enemy_spawner = EnemySpawner::init(world);
+        debug!("Add EnemySpawner resource");
+        world.insert(enemy_spawner);
 
         // Setup debug lines as a resource
         world.insert(DebugLines::new());
@@ -44,10 +48,12 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         // Activate the gameplay systems.
         *world.write_resource() = RuntimeSystemState::Running;
 
+        debug!("Load tilemap");
         let tilemap = tilemap::Tilemap::load("arena.tmx", world);
         let player_spawn = tilemap.player_spawn.clone();
         world.insert(tilemap);
 
+        debug!("Create player");
         let player = create_player(
             world,
             player_spawn.unwrap_or_else(|| {
@@ -57,11 +63,12 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
             }),
         );
 
-        *world.write_resource() = PlayerResource {
+        world.insert(PlayerResource {
             player: Some(player),
-        };
+        });
 
         //add_bullet(world);
+        debug!("Init camera");
         initialize_camera(world);
     }
 
