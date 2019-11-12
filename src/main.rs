@@ -15,7 +15,7 @@ use thief_engine::{
     event::{MyEvent, MyEventReader},
     states,
     systems::{
-        AnimationSystem, BulletSystem, CollisionSystem, DialogSystem, EnemySystem,
+        health, AnimationSystem, BulletSystem, CollisionSystem, DialogSystem, EnemySystem,
         MyCollisionWorld, PlayerSystem, WalkableSystem,
     },
 };
@@ -89,7 +89,13 @@ fn main() -> amethyst::Result<()> {
             WalkableSystem.pausable(states::RuntimeSystemState::Running),
             "walkable_system",
             &["collision_system"],
-        );
+        )
+        //.with(
+        //    health::HealthSystem.pausable(states::RuntimeSystemState::Running),
+        //    "health_system",
+        //    &["collision_system"],
+        //)
+        ;
 
     let assets_dir = app_root.join("assets");
     let application = CoreApplication::<_, MyEvent, MyEventReader>::build(

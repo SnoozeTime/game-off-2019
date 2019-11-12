@@ -1,6 +1,6 @@
 // These imports are required for the #[derive(EventReader)] code to build
 use amethyst::core::{
-    ecs::{Read, SystemData, World},
+    ecs::{Entity, Read, SystemData, World},
     shrev::{EventChannel, ReaderId},
     EventReader,
 };
@@ -12,7 +12,7 @@ pub enum AppEvent {
     NewDialog(Vec<String>),
     DialogOver,
     GameOver,
-    PlayerHit,
+    EntityHit(Entity),
 }
 
 #[derive(Debug, EventReader, Clone)]

@@ -1,9 +1,10 @@
 //! Manage different sort of collision
 use crate::systems::{Player, PlayerStatus};
-use crate::util::delete_entity_with_collider;
+use crate::{event::AppEvent, util::delete_entity_with_collider};
 use amethyst::{
     core::{
         math::{zero, Isometry2, Vector2},
+        shrev::EventChannel,
         SystemDesc, Transform,
     },
     derive::SystemDesc,
@@ -196,13 +197,18 @@ impl<'s> System<'s> for CollisionSystem {
         ReadStorage<'s, Transform>,
         Write<'s, MyCollisionWorld>,
         Entities<'s>,
+        Write<'s, EventChannel<AppEvent>>,
     );
 
-    fn run(&mut self, (colliders, transforms, mut collision_world, entities): Self::SystemData) {
+    fn run(
+        &mut self,
+        (colliders, transforms, mut collision_world, entities, mut channel): Self::SystemData,
+    ) {
         // handle here all the collision events.
         let mut to_remove = vec![];
         for event in collision_world.world.contact_events() {
-            let mut to_remove_from_ev = self.handle_contact_event(&collision_world.world, event);
+            let mut to_remove_from_ev =
+                self.handle_contact_event(&collision_world.world, event, &mut channel);
             to_remove.append(&mut to_remove_from_ev);
         }
         // now update all the positions and update the world.
@@ -242,6 +248,7 @@ impl CollisionSystem {
         &self,
         world: &CollisionWorld<f32, ColliderData>,
         event: &ContactEvent<CollisionObjectSlabHandle>,
+        channel: &mut Write<EventChannel<AppEvent>>,
     ) -> Vec<Entity> {
         let mut to_remove = vec![];
         if let &ContactEvent::Started(collider1, collider2) = event {
@@ -284,6 +291,17 @@ impl CollisionSystem {
                 }
                 _ => (),
             }
+
+            channel.single_write(AppEvent::EntityHit(
+                obj1.data()
+                    .entity
+                    .expect("obj1 collider should have an entity in its data"),
+            ));
+            channel.single_write(AppEvent::EntityHit(
+                obj2.data()
+                    .entity
+                    .expect("obj2 collider should have an entity in its data"),
+            ));
         }
 
         to_remove
