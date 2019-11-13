@@ -10,7 +10,8 @@ use amethyst::{
 };
 
 use crate::systems::{BulletSpawner, MyCollisionWorld, PlayerResource};
-use log::error;
+#[allow(unused_imports)]
+use log::{error, info};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum EnemyType {
@@ -67,43 +68,42 @@ impl<'s> System<'s> for EnemySystem {
         ): Self::SystemData,
     ) {
         if let Some(e) = player.player {
-            let player_transform = transforms
-                .get(e)
-                .expect("player should have a transform")
-                .clone();
-            let player_vec = player_transform.translation();
+            if let Some(player_transform) = transforms.get(e).cloned() {
+                let player_vec = player_transform.translation();
 
-            for (t, enemy) in (&mut transforms, &mut enemies).join() {
-                let delta_time = time.delta_seconds();
-                let enemy_vec = t.translation();
+                for (t, enemy) in (&mut transforms, &mut enemies).join() {
+                    let delta_time = time.delta_seconds();
+                    let enemy_vec = t.translation();
 
-                let direction = player_vec - enemy_vec;
+                    let direction = player_vec - enemy_vec;
 
-                let dist = direction.norm();
-                let d = direction.normalize();
-                if dist <= 150.0 {
-                    if enemy.time_before_shooting <= 0.0 {
-                        // shoot at the player :D
-                        if let Err(e) = bullet_spawner.spawn_enemy_bullet(
-                            &entities,
-                            &updater,
-                            &mut collision,
-                            0,
-                            *t.translation(),
-                            direction.xy(),
-                            100.0,
-                        ) {
-                            error!("Enemy cannot spawn bullet: {}", e);
+                    let dist = direction.norm();
+                    let d = direction.normalize();
+                    if dist <= 150.0 {
+                        if enemy.time_before_shooting <= 0.0 {
+                            // shoot at the player :D
+                            if let Err(e) = bullet_spawner.spawn_enemy_bullet(
+                                &entities,
+                                &updater,
+                                &mut collision,
+                                0,
+                                *t.translation(),
+                                direction.xy(),
+                                100.0,
+                            ) {
+                                error!("Enemy cannot spawn bullet: {}", e);
+                            }
+                            enemy.time_before_shooting = enemy.reload_time;
+                        } else {
+                            enemy.time_before_shooting -= delta_time;
                         }
-                        enemy.time_before_shooting = enemy.reload_time;
                     } else {
-                        enemy.time_before_shooting -= delta_time;
+                        t.prepend_translation_x(1.2 * d.x);
+                        t.prepend_translation_y(1.2 * d.y);
                     }
-                } else {
-                    t.prepend_translation_x(1.2 * d.x);
-                    t.prepend_translation_y(1.2 * d.y);
                 }
             }
         }
+        // info!("Processed data for {} enemies", i);
     }
 }

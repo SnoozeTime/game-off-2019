@@ -5,11 +5,12 @@ use crate::z_layers::*;
 use crate::{
     event::{AppEvent, MyEvent},
     objects::{enemy::EnemySpawner, player::create_player},
-    systems::PlayerResource,
+    systems::{Bullet, Collider, MyCollisionWorld, PlayerResource},
+    util::delete_entity_with_collider,
 };
 use amethyst::{
     core::transform::Transform,
-    ecs::prelude::Entity,
+    ecs::prelude::{Entities, Entity, Join, Read, ReadStorage, Write},
     input::{is_close_requested, is_key_down},
     prelude::*,
     renderer::{
@@ -18,6 +19,7 @@ use amethyst::{
     },
     winit::VirtualKeyCode,
 };
+#[allow(unused_imports)]
 use log::{debug, error, info};
 
 use super::{MyTrans, RuntimeSystemState, ARENA_HEIGHT, ARENA_WIDTH};
@@ -82,11 +84,44 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         if let Some(handler) = self.ui_handle {
             delete_hierarchy(handler, data.world).expect("Failed to remove WelcomeScreen");
         }
-        let entities = Vec::from(data.world.get_mut::<tilemap::Tilemap>().unwrap().entities());
 
-        if let Err(e) = data.world.delete_entities(&entities) {
-            error!("{:?}", e);
-        }
+        data.world.exec(
+            |(tilemap, mut collisions_world, entities, colliders, player, bullets): (
+                Read<tilemap::Tilemap>,
+                Write<MyCollisionWorld>,
+                Entities,
+                ReadStorage<Collider>,
+                Read<PlayerResource>,
+                ReadStorage<Bullet>,
+            )| {
+                for e in tilemap.entities().iter().cloned() {
+                    delete_entity_with_collider(
+                        e,
+                        &colliders,
+                        &entities,
+                        &mut collisions_world.world,
+                    );
+                }
+                if let Some(e) = player.player {
+                    delete_entity_with_collider(
+                        e,
+                        &colliders,
+                        &entities,
+                        &mut collisions_world.world,
+                    );
+                }
+
+                // remove in flight bullets
+                for (_bullet, entity) in (&bullets, &entities).join() {
+                    delete_entity_with_collider(
+                        entity,
+                        &colliders,
+                        &entities,
+                        &mut collisions_world.world,
+                    );
+                }
+            },
+        );
         self.ui_handle = None;
     }
 

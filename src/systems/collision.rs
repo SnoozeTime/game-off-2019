@@ -263,60 +263,66 @@ impl CollisionSystem {
     ) -> Vec<Entity> {
         let mut to_remove = vec![];
         if let &ContactEvent::Started(collider1, collider2) = event {
-            let obj1 = world.collision_object(collider1).unwrap();
-            let obj2 = world.collision_object(collider2).unwrap();
+            // maybe remaining event from last frame before we deleted the colliders...
+            match (
+                world.collision_object(collider1),
+                world.collision_object(collider2),
+            ) {
+                (Some(obj1), Some(obj2)) => {
+                    debug!(
+                        "OBJ1 {:?} collided with OBJ2 {:?}",
+                        obj1.data(),
+                        obj2.data()
+                    );
+                    match (obj1.data().ty, obj2.data().ty) {
+                        (ColliderObjectType::Player, ColliderObjectType::Bullet) => {
+                            debug!("Object 1 (Player) collided with object 2 (Bullet)");
+                            to_remove.push(
+                                obj2.data()
+                                    .entity
+                                    .expect("Bullet should have an entity in its data"),
+                            );
+                            //entities.delete(obj2.data().ty);
+                            self.send_hit_event(
+                                channel,
+                                obj1.data()
+                                    .entity
+                                    .expect("player collider should have entity"),
+                            );
+                        }
+                        (ColliderObjectType::Bullet, ColliderObjectType::Player) => {
+                            debug!("Object 1 (Bullet) collided with object 2 (Player)");
+                            to_remove.push(
+                                obj1.data()
+                                    .entity
+                                    .expect("Bullet should have an entity in its data"),
+                            );
 
-            debug!(
-                "OBJ1 {:?} collided with OBJ2 {:?}",
-                obj1.data(),
-                obj2.data()
-            );
-            match (obj1.data().ty, obj2.data().ty) {
-                (ColliderObjectType::Player, ColliderObjectType::Bullet) => {
-                    debug!("Object 1 (Player) collided with object 2 (Bullet)");
-                    to_remove.push(
-                        obj2.data()
-                            .entity
-                            .expect("Bullet should have an entity in its data"),
-                    );
-                    //entities.delete(obj2.data().ty);
-                    self.send_hit_event(
-                        channel,
-                        obj1.data()
-                            .entity
-                            .expect("player collider should have entity"),
-                    );
-                }
-                (ColliderObjectType::Bullet, ColliderObjectType::Player) => {
-                    debug!("Object 1 (Bullet) collided with object 2 (Player)");
-                    to_remove.push(
-                        obj1.data()
-                            .entity
-                            .expect("Bullet should have an entity in its data"),
-                    );
-
-                    self.send_hit_event(
-                        channel,
-                        obj2.data()
-                            .entity
-                            .expect("player collider should have entity"),
-                    );
-                }
-                (ColliderObjectType::Bullet, ColliderObjectType::Wall) => {
-                    debug!("Bullet (1) collided with wall (2)");
-                    to_remove.push(
-                        obj1.data()
-                            .entity
-                            .expect("Bullet should have an entity in its data"),
-                    );
-                }
-                (ColliderObjectType::Wall, ColliderObjectType::Bullet) => {
-                    debug!("Bullet (1) collided with wall (1)");
-                    to_remove.push(
-                        obj2.data()
-                            .entity
-                            .expect("Bullet should have an entity in its data"),
-                    );
+                            self.send_hit_event(
+                                channel,
+                                obj2.data()
+                                    .entity
+                                    .expect("player collider should have entity"),
+                            );
+                        }
+                        (ColliderObjectType::Bullet, ColliderObjectType::Wall) => {
+                            debug!("Bullet (1) collided with wall (2)");
+                            to_remove.push(
+                                obj1.data()
+                                    .entity
+                                    .expect("Bullet should have an entity in its data"),
+                            );
+                        }
+                        (ColliderObjectType::Wall, ColliderObjectType::Bullet) => {
+                            debug!("Bullet (1) collided with wall (1)");
+                            to_remove.push(
+                                obj2.data()
+                                    .entity
+                                    .expect("Bullet should have an entity in its data"),
+                            );
+                        }
+                        _ => (),
+                    }
                 }
                 _ => (),
             }
