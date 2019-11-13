@@ -90,6 +90,7 @@ pub fn create_player(world: &mut World, position: Transform) -> Entity {
             &mut collision_world.world,
             ColliderObjectType::Player,
             None,
+            None,
         )
     };
 
@@ -102,7 +103,7 @@ pub fn create_player(world: &mut World, position: Transform) -> Entity {
         .with(sprite_render)
         .with(animation_controller)
         .with(collider.clone())
-        //.with(Health::new(player_config.health))
+        .with(Health::new(player_config.health))
         .build();
 
     let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();

@@ -90,12 +90,11 @@ fn main() -> amethyst::Result<()> {
             "walkable_system",
             &["collision_system"],
         )
-        //.with(
-        //    health::HealthSystem.pausable(states::RuntimeSystemState::Running),
-        //    "health_system",
-        //    &["collision_system"],
-        //)
-        ;
+        .with_system_desc(
+            health::HealthSystemDesc,
+            "health_system",
+            &["collision_system"],
+        );
 
     let assets_dir = app_root.join("assets");
     let application = CoreApplication::<_, MyEvent, MyEventReader>::build(

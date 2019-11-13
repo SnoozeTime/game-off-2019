@@ -84,7 +84,7 @@ impl<'s> System<'s> for EnemySystem {
                 if dist <= 150.0 {
                     if enemy.time_before_shooting <= 0.0 {
                         // shoot at the player :D
-                        if let Err(e) = bullet_spawner.spawn_bullet(
+                        if let Err(e) = bullet_spawner.spawn_enemy_bullet(
                             &entities,
                             &updater,
                             &mut collision,

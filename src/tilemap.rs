@@ -191,6 +191,7 @@ impl Tilemap {
                             &mut collworld.world,
                             ColliderObjectType::None,
                             None,
+                            None,
                         )
                     };
                     let mut debug_line = DebugLinesComponent::with_capacity(10);
@@ -242,6 +243,7 @@ impl Tilemap {
                             height,
                             &mut collworld.world,
                             ColliderObjectType::Wall,
+                            None,
                             None,
                         )
                     };

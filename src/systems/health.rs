@@ -35,19 +35,15 @@ impl Health {
 }
 
 #[derive(SystemDesc)]
+#[system_desc(name(HealthSystemDesc))]
 pub struct HealthSystem {
-    reader_id: Option<ReaderId<AppEvent>>,
+    #[system_desc(event_channel_reader)]
+    reader_id: ReaderId<AppEvent>,
 }
 
 impl HealthSystem {
-    pub fn new(world: &mut World) -> Self {
-        <Self as System<'_>>::SystemData::setup(world);
-        let reader = world
-            .fetch_mut::<EventChannel<AppEvent>>()
-            .register_reader();
-        Self {
-            reader_id: Some(reader),
-        }
+    pub fn new(reader_id: ReaderId<AppEvent>) -> Self {
+        Self { reader_id }
     }
 
     /// Decrease the health of the entity that has been hit.
@@ -56,13 +52,18 @@ impl HealthSystem {
         &self,
         entity: Entity,
         health_storage: &mut WriteStorage<Health>,
-        _players: &ReadStorage<Player>,
+        players: &ReadStorage<Player>,
     ) {
         debug!("Process Hit for entity {:?}", entity);
         if let Some(ref mut h) = health_storage.get_mut(entity) {
             h.current_health -= 1;
             if h.current_health <= 0 {
                 debug!("Entity died :(");
+
+                // let's check if that is the player :)
+                if let Some(_) = players.get(entity) {
+                    debug!("Game over...");
+                }
             }
         } else {
             debug!("Entity does not have health component...");
@@ -79,13 +80,11 @@ impl<'s> System<'s> for HealthSystem {
     );
 
     fn run(&mut self, (mut healths, players, _time, events): Self::SystemData) {
-        if let Some(ref mut rid) = self.reader_id {
-            for ev in events.read(rid) {
-                if let AppEvent::EntityHit(e) = ev {
-                    // In that case, one entity has been hit by a bullet so let's check if it has
-                    // some health component.
-                    self.process_hit(*e, &mut healths, &players);
-                }
+        for ev in events.read(&mut self.reader_id) {
+            if let AppEvent::EntityHit(e) = ev {
+                // In that case, one entity has been hit by a bullet so let's check if it has
+                // some health component.
+                self.process_hit(*e, &mut healths, &players);
             }
         }
     }

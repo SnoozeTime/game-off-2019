@@ -94,12 +94,23 @@ impl Collider {
         h: f32,
         collision_world: &mut CollisionWorld<f32, ColliderData>,
         collider_type: ColliderObjectType,
+        collide_with: Option<&[ColliderObjectType]>,
         entity: Option<Entity>,
     ) -> Self {
         let rect = ShapeHandle::new(Cuboid::new(Vector2::new(w / 2.0, h / 2.0)));
         let position = Isometry2::new(position, zero());
         let mut group = CollisionGroups::new();
         group.set_membership(&[collider_type.get_collider_group()]);
+        // if there is a list of types to collide with, then set it. Otherwise the collider will
+        // collide with everything.
+        if let Some(collide_with) = collide_with {
+            group.set_whitelist(
+                &collide_with
+                    .iter()
+                    .map(|ty| ty.get_collider_group())
+                    .collect::<Vec<_>>(),
+            );
+        }
 
         let contacts_query = GeometricQueryType::Contacts(0.0, 0.0);
 
@@ -255,6 +266,11 @@ impl CollisionSystem {
             let obj1 = world.collision_object(collider1).unwrap();
             let obj2 = world.collision_object(collider2).unwrap();
 
+            debug!(
+                "OBJ1 {:?} collided with OBJ2 {:?}",
+                obj1.data(),
+                obj2.data()
+            );
             match (obj1.data().ty, obj2.data().ty) {
                 (ColliderObjectType::Player, ColliderObjectType::Bullet) => {
                     debug!("Object 1 (Player) collided with object 2 (Bullet)");
@@ -264,6 +280,12 @@ impl CollisionSystem {
                             .expect("Bullet should have an entity in its data"),
                     );
                     //entities.delete(obj2.data().ty);
+                    self.send_hit_event(
+                        channel,
+                        obj1.data()
+                            .entity
+                            .expect("player collider should have entity"),
+                    );
                 }
                 (ColliderObjectType::Bullet, ColliderObjectType::Player) => {
                     debug!("Object 1 (Bullet) collided with object 2 (Player)");
@@ -271,6 +293,13 @@ impl CollisionSystem {
                         obj1.data()
                             .entity
                             .expect("Bullet should have an entity in its data"),
+                    );
+
+                    self.send_hit_event(
+                        channel,
+                        obj2.data()
+                            .entity
+                            .expect("player collider should have entity"),
                     );
                 }
                 (ColliderObjectType::Bullet, ColliderObjectType::Wall) => {
@@ -291,19 +320,12 @@ impl CollisionSystem {
                 }
                 _ => (),
             }
-
-            channel.single_write(AppEvent::EntityHit(
-                obj1.data()
-                    .entity
-                    .expect("obj1 collider should have an entity in its data"),
-            ));
-            channel.single_write(AppEvent::EntityHit(
-                obj2.data()
-                    .entity
-                    .expect("obj2 collider should have an entity in its data"),
-            ));
         }
 
         to_remove
+    }
+
+    fn send_hit_event(&self, channel: &mut Write<EventChannel<AppEvent>>, entity: Entity) {
+        channel.single_write(AppEvent::EntityHit(entity));
     }
 }

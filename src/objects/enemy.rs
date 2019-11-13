@@ -76,6 +76,7 @@ impl EnemySpawner {
                     16.0,
                     &mut collision.world,
                     ColliderObjectType::Enemy,
+                    None,
                     Some(entity),
                 );
                 //collider.set_entity(&mut collision.world, entity);

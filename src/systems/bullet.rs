@@ -86,7 +86,7 @@ impl BulletSpawner {
     /// Entities will create a new entity. Updater will add components to the entity.
     ///
     /// bullet_idx should be found as a constant usize in this module.
-    pub fn spawn_bullet(
+    pub fn spawn_enemy_bullet(
         &self,
         entities: &Entities,
         updater: &LazyUpdate,
@@ -111,6 +111,7 @@ impl BulletSpawner {
                     8.0,
                     &mut collision.world,
                     ColliderObjectType::Bullet,
+                    Some(&[ColliderObjectType::Player, ColliderObjectType::Wall]),
                     Some(bullet),
                 );
                 //collider.set_entddity(&mut collision.world, bullet);
