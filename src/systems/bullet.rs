@@ -96,6 +96,50 @@ impl BulletSpawner {
         direction: Vector2<f32>,
         speed: f32,
     ) -> GameResult<()> {
+        self.spawn_bullet(
+            entities,
+            updater,
+            collision,
+            bullet_idx,
+            origin,
+            direction,
+            speed,
+            &[ColliderObjectType::Player, ColliderObjectType::Wall],
+        )
+    }
+    pub fn spawn_player_bullet(
+        &self,
+        entities: &Entities,
+        updater: &LazyUpdate,
+        collision: &mut MyCollisionWorld,
+        bullet_idx: usize,
+        origin: Vector3<f32>,
+        direction: Vector2<f32>,
+        speed: f32,
+    ) -> GameResult<()> {
+        self.spawn_bullet(
+            entities,
+            updater,
+            collision,
+            bullet_idx,
+            origin,
+            direction,
+            speed,
+            &[ColliderObjectType::Enemy, ColliderObjectType::Wall],
+        )
+    }
+
+    fn spawn_bullet(
+        &self,
+        entities: &Entities,
+        updater: &LazyUpdate,
+        collision: &mut MyCollisionWorld,
+        bullet_idx: usize,
+        origin: Vector3<f32>,
+        direction: Vector2<f32>,
+        speed: f32,
+        collide_with: &[ColliderObjectType],
+    ) -> GameResult<()> {
         debug!(
             "Will spawn bullet {} from point {:?} with direction {:?} at speed {}",
             bullet_idx, origin, direction, speed
@@ -111,7 +155,7 @@ impl BulletSpawner {
                     8.0,
                     &mut collision.world,
                     ColliderObjectType::Bullet,
-                    Some(&[ColliderObjectType::Player, ColliderObjectType::Wall]),
+                    Some(collide_with),
                     Some(bullet),
                 );
                 //collider.set_entddity(&mut collision.world, bullet);

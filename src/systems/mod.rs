@@ -6,6 +6,7 @@ pub use collision::*;
 pub use enemy::{Enemy, EnemySystem};
 
 mod animation;
+pub mod attack;
 mod bullet;
 mod collision;
 mod dialog;

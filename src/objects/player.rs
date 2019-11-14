@@ -4,7 +4,7 @@ use crate::{
     config::PlayerConfig,
     objects::animations,
     systems::{
-        health::Health, Animation, AnimationController, Collider, ColliderObjectType,
+        attack::Weapon, health::Health, AnimationController, Collider, ColliderObjectType,
         MyCollisionWorld, Player,
     },
     util::load_spritesheet,
@@ -42,6 +42,7 @@ pub fn create_player(world: &mut World, position: Transform) -> Entity {
         current_animation: None,
     };
     animation_controller.animations.extend(walking_animations);
+
     // SETUP COLLIDER
     // --------------------
     let collider = {
@@ -69,6 +70,7 @@ pub fn create_player(world: &mut World, position: Transform) -> Entity {
         .with(animation_controller)
         .with(collider.clone())
         .with(Health::new(player_config.health))
+        .with(Weapon::default())
         .build();
 
     let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
