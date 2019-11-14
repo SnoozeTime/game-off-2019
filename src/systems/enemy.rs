@@ -9,7 +9,7 @@ use amethyst::{
     },
 };
 
-use crate::systems::{BulletSpawner, MyCollisionWorld, PlayerResource};
+use crate::systems::{AnimationController, BulletSpawner, MyCollisionWorld, PlayerResource};
 #[allow(unused_imports)]
 use log::{error, info};
 
@@ -52,6 +52,7 @@ impl<'s> System<'s> for EnemySystem {
         Read<'s, LazyUpdate>,
         Read<'s, BulletSpawner>,
         Write<'s, MyCollisionWorld>,
+        WriteStorage<'s, AnimationController>,
     );
 
     fn run(
@@ -65,16 +66,21 @@ impl<'s> System<'s> for EnemySystem {
             updater,
             bullet_spawner,
             mut collision,
+            mut animations,
         ): Self::SystemData,
     ) {
         if let Some(e) = player.player {
             if let Some(player_transform) = transforms.get(e).cloned() {
                 let player_vec = player_transform.translation();
 
-                for (t, enemy) in (&mut transforms, &mut enemies).join() {
+                for (t, enemy, e) in (&mut transforms, &mut enemies, &entities).join() {
                     let delta_time = time.delta_seconds();
                     let enemy_vec = t.translation();
 
+                    let mut maybe_anim = animations.get_mut(e);
+                    if let Some(ref mut anim) = maybe_anim {
+                        anim.current_animation = None;
+                    }
                     let direction = player_vec - enemy_vec;
 
                     let dist = direction.norm();
@@ -100,6 +106,18 @@ impl<'s> System<'s> for EnemySystem {
                     } else {
                         t.prepend_translation_x(1.2 * d.x);
                         t.prepend_translation_y(1.2 * d.y);
+
+                        if let Some(ref mut anim) = maybe_anim {
+                            if d.x < 0.0 {
+                                anim.current_animation = Some("walk_left".to_string());
+                            } else if d.x > 0.0 {
+                                anim.current_animation = Some("walk_right".to_string());
+                            } else if d.y > 0.0 {
+                                anim.current_animation = Some("walk_up".to_string());
+                            } else if d.y < 0.0 {
+                                anim.current_animation = Some("walk_down".to_string());
+                            }
+                        }
                     }
                 }
             }

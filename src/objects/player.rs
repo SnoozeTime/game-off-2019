@@ -2,6 +2,7 @@
 //!
 use crate::{
     config::PlayerConfig,
+    objects::animations,
     systems::{
         health::Health, Animation, AnimationController, Collider, ColliderObjectType,
         MyCollisionWorld, Player,
@@ -35,48 +36,12 @@ pub fn create_player(world: &mut World, position: Transform) -> Entity {
     // --------------------------------------------------------
     // Basic animation for the player
     // down left right up
-    let down_animation = Animation {
-        sprite_indexes: vec![0, 1, 2, 3],
-        current_index: 0,
-        step_duration: 0.3,
-        elapsed_time: 0.0,
-    };
-    let left_animation = Animation {
-        sprite_indexes: vec![4, 5, 6, 7],
-        current_index: 0,
-        step_duration: 0.3,
-        elapsed_time: 0.0,
-    };
-    let right_animation = Animation {
-        sprite_indexes: vec![8, 9, 10, 11],
-        current_index: 0,
-        step_duration: 0.3,
-        elapsed_time: 0.0,
-    };
-    let up_animation = Animation {
-        sprite_indexes: vec![12, 13, 14, 15],
-        current_index: 0,
-        step_duration: 0.3,
-        elapsed_time: 0.0,
-    };
-
+    let walking_animations = animations::get_walking_animations();
     let mut animation_controller = AnimationController {
         animations: HashMap::new(),
         current_animation: None,
     };
-    animation_controller
-        .animations
-        .insert("walk_down".to_string(), down_animation);
-    animation_controller
-        .animations
-        .insert("walk_left".to_string(), left_animation);
-    animation_controller
-        .animations
-        .insert("walk_right".to_string(), right_animation);
-    animation_controller
-        .animations
-        .insert("walk_up".to_string(), up_animation);
-
+    animation_controller.animations.extend(walking_animations);
     // SETUP COLLIDER
     // --------------------
     let collider = {

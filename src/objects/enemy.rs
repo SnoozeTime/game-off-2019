@@ -1,7 +1,11 @@
 //! Helpers to create the enemy entities...
 //!
 use crate::{
-    systems::{enemy::EnemyType, Collider, ColliderObjectType, Enemy, MyCollisionWorld},
+    objects::animations,
+    systems::{
+        enemy::EnemyType, AnimationController, Collider, ColliderObjectType, Enemy,
+        MyCollisionWorld,
+    },
     util::load_spritesheet,
 };
 use amethyst::{
@@ -25,7 +29,7 @@ impl EnemySpawner {
     pub fn init(world: &mut World) -> Self {
         // default implementation assumes all assets are present. Doesn't make sense otherwise...
         let mut textures = HashMap::new();
-        let sprite_sheet = load_spritesheet("rectangle", world);
+        let sprite_sheet = load_spritesheet("Mage", world);
         textures.insert(EnemyType::Simple, sprite_sheet);
         Self { textures }
     }
@@ -82,8 +86,15 @@ impl EnemySpawner {
                 //collider.set_entity(&mut collision.world, entity);
                 collider
             };
+            let walking_animations = animations::get_walking_animations();
+            let mut animation_controller = AnimationController {
+                animations: HashMap::new(),
+                current_animation: None,
+            };
+            animation_controller.animations.extend(walking_animations);
 
             updater.insert(entity, position);
+            updater.insert(entity, animation_controller);
             updater.insert(entity, sprite);
             updater.insert(entity, Enemy::default());
             updater.insert(entity, collider);
