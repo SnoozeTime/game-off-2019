@@ -14,3 +14,5 @@ pub mod enemy;
 pub mod garbage;
 pub mod health;
 mod player;
+pub mod spawn;
+pub mod wave;

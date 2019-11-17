@@ -17,3 +17,14 @@ impl Default for PlayerConfig {
         }
     }
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ArenaConfig {
+    pub waves: Vec<WaveConfig>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+pub struct WaveConfig {
+    pub enemies_in_fly: i32,
+    pub total_enemies: i32,
+}
