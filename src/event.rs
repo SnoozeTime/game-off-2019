@@ -13,6 +13,7 @@ pub enum AppEvent {
     DialogOver,
     GameOver,
     EntityHit(Entity),
+    EnemyDied(Entity),
 }
 
 #[derive(Debug, EventReader, Clone)]

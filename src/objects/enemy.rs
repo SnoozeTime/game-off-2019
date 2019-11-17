@@ -3,7 +3,7 @@
 use crate::{
     objects::animations,
     systems::{
-        enemy::EnemyType, AnimationController, Collider, ColliderObjectType, Enemy,
+        enemy::EnemyType, health::Health, AnimationController, Collider, ColliderObjectType, Enemy,
         MyCollisionWorld,
     },
     util::load_spritesheet,
@@ -98,6 +98,7 @@ impl EnemySpawner {
             updater.insert(entity, sprite);
             updater.insert(entity, Enemy::default());
             updater.insert(entity, collider);
+            updater.insert(entity, Health::new(2));
             Some(entity)
         } else {
             None

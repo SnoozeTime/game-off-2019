@@ -15,8 +15,8 @@ use thief_engine::{
     event::{MyEvent, MyEventReader},
     states,
     systems::{
-        attack, health, AnimationSystem, BulletSystem, CollisionSystem, DialogSystem, EnemySystem,
-        MyCollisionWorld, PlayerSystem, WalkableSystem,
+        attack, health, AnimationSystem, BulletSystem, CollisionSystemDesc, DialogSystem,
+        EnemySystem, MyCollisionWorld, PlayerSystem, WalkableSystem,
     },
 };
 
@@ -80,11 +80,7 @@ fn main() -> amethyst::Result<()> {
             "bullet_system",
             &[],
         )
-        .with(
-            CollisionSystem.pausable(states::RuntimeSystemState::Running),
-            "collision_system",
-            &[],
-        )
+        .with_system_desc(CollisionSystemDesc, "collision_system", &[])
         .with(
             WalkableSystem.pausable(states::RuntimeSystemState::Running),
             "walkable_system",

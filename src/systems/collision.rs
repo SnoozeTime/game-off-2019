@@ -4,7 +4,7 @@ use crate::{event::AppEvent, util::delete_entity_with_collider};
 use amethyst::{
     core::{
         math::{zero, Isometry2, Vector2},
-        shrev::EventChannel,
+        shrev::{EventChannel, ReaderId},
         SystemDesc, Transform,
     },
     derive::SystemDesc,
@@ -200,7 +200,11 @@ impl<'s> System<'s> for WalkableSystem {
 }
 
 #[derive(Debug, SystemDesc)]
-pub struct CollisionSystem;
+#[system_desc(name(CollisionSystemDesc))]
+pub struct CollisionSystem {
+    #[system_desc(event_channel_reader)]
+    reader_id: ReaderId<AppEvent>,
+}
 
 impl<'s> System<'s> for CollisionSystem {
     type SystemData = (
@@ -217,6 +221,18 @@ impl<'s> System<'s> for CollisionSystem {
     ) {
         // handle here all the collision events.
         let mut to_remove = vec![];
+
+        // delete all the entities that should be deleted. This is done
+        // here because convenient access to all relevant systems :)
+        for ev in channel.read(&mut self.reader_id) {
+            match ev {
+                AppEvent::EnemyDied(e) => {
+                    to_remove.push(*e);
+                }
+                _ => (),
+            }
+        }
+
         for event in collision_world.world.contact_events() {
             let mut to_remove_from_ev =
                 self.handle_contact_event(&collision_world.world, event, &mut channel);
@@ -235,6 +251,10 @@ impl<'s> System<'s> for CollisionSystem {
 }
 
 impl CollisionSystem {
+    pub fn new(reader_id: ReaderId<AppEvent>) -> Self {
+        Self { reader_id }
+    }
+
     /// Will update the collision object positiosn from the transform attached to the
     /// same entity.
     fn update_obj_positions(
@@ -321,6 +341,35 @@ impl CollisionSystem {
                                     .expect("Bullet should have an entity in its data"),
                             );
                         }
+                        (ColliderObjectType::Bullet, ColliderObjectType::Enemy) => {
+                            debug!("Bullet (1) collided with enemy (2)");
+                            to_remove.push(
+                                obj1.data()
+                                    .entity
+                                    .expect("Bullet should have an entity in its data"),
+                            );
+                            self.send_hit_event(
+                                channel,
+                                obj2.data()
+                                    .entity
+                                    .expect("enemy collider should have entity"),
+                            );
+                        }
+                        (ColliderObjectType::Enemy, ColliderObjectType::Bullet) => {
+                            debug!("Bullet (2) collided with enemy (1)");
+                            to_remove.push(
+                                obj2.data()
+                                    .entity
+                                    .expect("Bullet should have an entity in its data"),
+                            );
+                            self.send_hit_event(
+                                channel,
+                                obj1.data()
+                                    .entity
+                                    .expect("enemy collider should have entity"),
+                            );
+                        }
+
                         _ => (),
                     }
                 }

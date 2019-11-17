@@ -70,6 +70,8 @@ impl HealthSystem {
                     debug!("Game over...");
                     p.state = PlayerStatus::GameOver;
                     to_send.push(AppEvent::GameOver);
+                } else {
+                    to_send.push(AppEvent::EnemyDied(entity));
                 }
             }
         } else {
