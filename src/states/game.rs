@@ -3,9 +3,10 @@ use crate::tilemap;
 use crate::util::delete_hierarchy;
 use crate::z_layers::*;
 use crate::{
+    config::ArenaConfig,
     event::{AppEvent, MyEvent},
     objects::{enemy::EnemySpawner, player::create_player},
-    systems::{Bullet, Collider, MyCollisionWorld, PlayerResource},
+    systems::{wave, Bullet, Collider, MyCollisionWorld, PlayerResource},
     util::delete_entity_with_collider,
 };
 use amethyst::{
@@ -17,6 +18,7 @@ use amethyst::{
         debug_drawing::{DebugLines, DebugLinesComponent, DebugLinesParams},
         Camera,
     },
+    utils::application_root_dir,
     winit::VirtualKeyCode,
 };
 #[allow(unused_imports)]
@@ -68,6 +70,13 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         world.insert(PlayerResource {
             player: Some(player),
         });
+
+        debug!("Create wave");
+        let app_root = application_root_dir().unwrap();
+        let config_file = app_root.join("config").join("wave1.ron");
+        let arena_config = ArenaConfig::load(&config_file);
+        let waves = wave::Waves::from_config(arena_config);
+        world.create_entity().with(waves).build();
 
         //add_bullet(world);
         debug!("Init camera");

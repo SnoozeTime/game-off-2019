@@ -23,6 +23,12 @@ pub struct ArenaConfig {
     pub waves: Vec<WaveConfig>,
 }
 
+impl Default for ArenaConfig {
+    fn default() -> Self {
+        Self { waves: vec![] }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub struct WaveConfig {
     pub enemies_in_fly: i32,

@@ -14,9 +14,22 @@
 //! properties.
 //!
 
-use crate::config::{ArenaConfig, WaveConfig};
-use amethyst::ecs::{Component, VecStorage};
-use log::error;
+use crate::{
+    config::{ArenaConfig, WaveConfig},
+    event::AppEvent,
+};
+use amethyst::{
+    core::{
+        shrev::{EventChannel, ReaderId},
+        SystemDesc,
+    },
+    derive::SystemDesc,
+    ecs::{
+        Component, Entity, Join, Read, System, SystemData, VecStorage, World, Write, WriteStorage,
+    },
+};
+#[allow(unused_imports)]
+use log::{debug, error, info};
 
 /// The component that will hold the state of the current arena waves.
 /// Should have only one at a time.
@@ -24,7 +37,7 @@ use log::error;
 #[storage(VecStorage)]
 pub struct Waves {
     waves: Vec<Wave>,
-    current_wave: Option<usize>,
+    current_wave: usize,
 }
 
 impl Waves {
@@ -38,10 +51,9 @@ impl Waves {
                 .map(Wave::from_config)
                 .collect(),
             current_wave: if config.waves.len() > 0 {
-                Some(0)
+                0
             } else {
-                error!("No waves in the configuration file");
-                None
+                panic!("No waves in the configuration file");
             },
         }
     }
@@ -57,6 +69,16 @@ pub struct Wave {
     /// When enemies are falling below a threshold, the wave system will
     /// spawn more.
     enemies_in_fly: i32,
+
+    /// If wave in idle status, the wave system will need to spwan all the enemies.
+    status: WaveStatus,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum WaveStatus {
+    Idle,
+    Running,
+    Over,
 }
 
 impl Wave {
@@ -64,6 +86,41 @@ impl Wave {
         Self {
             enemies_in_fly: config.enemies_in_fly,
             enemies_left: config.total_enemies,
+            status: WaveStatus::Idle,
+        }
+    }
+}
+
+/// Will keep track of how many enemies are in the arena and when to spawn
+/// new enemies.
+#[derive(SystemDesc)]
+#[system_desc(name(WaveSystemDesc))]
+pub struct WaveSystem {
+    #[system_desc(event_channel_reader)]
+    reader_id: ReaderId<AppEvent>,
+}
+
+impl WaveSystem {
+    pub fn new(reader_id: ReaderId<AppEvent>) -> Self {
+        Self { reader_id }
+    }
+}
+
+impl<'s> System<'s> for WaveSystem {
+    type SystemData = (WriteStorage<'s, Waves>, Write<'s, EventChannel<AppEvent>>);
+
+    fn run(&mut self, (mut waves, mut events): Self::SystemData) {
+        // only one waves component.
+        if let Some(ref mut waves) = (&mut waves).join().next() {
+            if let Some(ref mut wave) = waves.waves.get_mut(waves.current_wave) {
+                // Process the current wave
+                if let WaveStatus::Idle = wave.status {
+                    debug!("Will initialize wave");
+                    let enemy_to_spawn = wave.enemies_left.min(wave.enemies_in_fly);
+                    events.single_write(AppEvent::SpawnEnemy(enemy_to_spawn));
+                    wave.status = WaveStatus::Running;
+                }
+            }
         }
     }
 }
