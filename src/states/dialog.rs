@@ -60,7 +60,7 @@ impl State<GameData<'static, 'static>, MyEvent> for DialogState {
                 }
             }
             MyEvent::App(e) => {
-                if let AppEvent::DialogOver = e {
+                if let AppEvent::DialogOver { .. } = e {
                     Trans::Pop
                 } else {
                     Trans::None

@@ -6,7 +6,7 @@ use crate::{
     config::ArenaConfig,
     event::{AppEvent, MyEvent},
     objects::{enemy::EnemySpawner, player::create_player},
-    systems::{wave, Bullet, Collider, MyCollisionWorld, PlayerResource},
+    systems::{wave, Bullet, Collider, Enemy, MyCollisionWorld, PlayerResource},
     util::delete_entity_with_collider,
 };
 use amethyst::{
@@ -23,12 +23,15 @@ use amethyst::{
 };
 #[allow(unused_imports)]
 use log::{debug, error, info};
+use std::sync::Arc;
 
 use super::{MyTrans, RuntimeSystemState, ARENA_HEIGHT, ARENA_WIDTH};
 use crate::systems::BulletSpawner;
 #[derive(Default, Debug)]
 pub struct GameState {
     ui_handle: Option<Entity>,
+    /// To send when the state is resumed.
+    resume_event: Option<AppEvent>,
 }
 
 impl State<GameData<'static, 'static>, MyEvent> for GameState {
@@ -95,13 +98,14 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         }
 
         data.world.exec(
-            |(tilemap, mut collisions_world, entities, colliders, player, bullets): (
+            |(tilemap, mut collisions_world, entities, colliders, player, bullets, enemies): (
                 Read<tilemap::Tilemap>,
                 Write<MyCollisionWorld>,
                 Entities,
                 ReadStorage<Collider>,
                 Read<PlayerResource>,
                 ReadStorage<Bullet>,
+                ReadStorage<Enemy>,
             )| {
                 for e in tilemap.entities().iter().cloned() {
                     delete_entity_with_collider(
@@ -122,6 +126,16 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
 
                 // remove in flight bullets
                 for (_bullet, entity) in (&bullets, &entities).join() {
+                    delete_entity_with_collider(
+                        entity,
+                        &colliders,
+                        &entities,
+                        &mut collisions_world.world,
+                    );
+                }
+
+                // remove in flight enemies
+                for (_enemy, entity) in (&enemies, &entities).join() {
                     delete_entity_with_collider(
                         entity,
                         &colliders,
@@ -152,7 +166,15 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
             MyEvent::App(e) => {
                 // In case the state receives an event for dialog, it will push a DialogState on
                 // top of the stack to pause the gameplay systems.
-                if let AppEvent::NewDialog(sentences) = e {
+                if let AppEvent::NewDialog {
+                    dialog: sentences,
+                    and_then,
+                } = e
+                {
+                    if let Some(e) = and_then {
+                        let clone = (*e).clone();
+                        self.resume_event = Some(clone);
+                    }
                     Trans::Push(Box::new(crate::states::DialogState::new(sentences.clone())))
                 } else if let AppEvent::GameOver = e {
                     Trans::Switch(Box::new(crate::states::GameOverState::default()))

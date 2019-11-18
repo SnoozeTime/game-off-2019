@@ -24,9 +24,7 @@ use amethyst::{
         SystemDesc,
     },
     derive::SystemDesc,
-    ecs::{
-        Component, Entity, Join, Read, System, SystemData, VecStorage, World, Write, WriteStorage,
-    },
+    ecs::{Component, Join, System, SystemData, VecStorage, World, Write, WriteStorage},
 };
 #[allow(unused_imports)]
 use log::{debug, error, info};
@@ -110,15 +108,41 @@ impl<'s> System<'s> for WaveSystem {
     type SystemData = (WriteStorage<'s, Waves>, Write<'s, EventChannel<AppEvent>>);
 
     fn run(&mut self, (mut waves, mut events): Self::SystemData) {
+        // poll the events even if there is no wave configured.. can we lose some
+        // events? dunno...
+        let mut to_spawn = 0;
+        for ev in events.read(&mut self.reader_id) {
+            if let AppEvent::EnemyDied(_) = ev {
+                debug!("Enemy died :D");
+                to_spawn += 1;
+            }
+        }
+
         // only one waves component.
         if let Some(ref mut waves) = (&mut waves).join().next() {
             if let Some(ref mut wave) = waves.waves.get_mut(waves.current_wave) {
                 // Process the current wave
-                if let WaveStatus::Idle = wave.status {
-                    debug!("Will initialize wave");
-                    let enemy_to_spawn = wave.enemies_left.min(wave.enemies_in_fly);
-                    events.single_write(AppEvent::SpawnEnemy(enemy_to_spawn));
-                    wave.status = WaveStatus::Running;
+                match wave.status {
+                    WaveStatus::Idle => {
+                        debug!("Will initialize wave");
+                        let enemy_to_spawn = wave.enemies_left.min(wave.enemies_in_fly);
+                        events.single_write(AppEvent::SpawnEnemy(enemy_to_spawn));
+                        wave.status = WaveStatus::Running;
+                    }
+                    WaveStatus::Running => {
+                        //
+                        if to_spawn > 0 {
+                            wave.enemies_left = (wave.enemies_left - to_spawn).max(0);
+
+                            if wave.enemies_left == 0 {
+                                info!("WAVE FINISHED!!!");
+                            } else {
+                                let enemy_to_spawn = to_spawn.min(wave.enemies_left);
+                                events.single_write(AppEvent::SpawnEnemy(enemy_to_spawn));
+                            }
+                        }
+                    }
+                    _ => (),
                 }
             }
         }

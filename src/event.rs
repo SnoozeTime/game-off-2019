@@ -6,13 +6,20 @@ use amethyst::core::{
 };
 use amethyst::derive::EventReader;
 use amethyst::{ui::UiEvent, winit::Event};
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub enum AppEvent {
     /// Start a new dialog
-    NewDialog(Vec<String>),
+    /// and_then would be an event to send once the dialog is over. It will be propagated to the
+    /// DialogOver event and sent by the Game state (not the DialogState) when resuming.
+    NewDialog {
+        dialog: Vec<String>,
+        and_then: Option<Arc<AppEvent>>,
+    },
     /// Generated when the current dialog is finished
     DialogOver,
+
     /// Generated when the game is finished (player loses)
     GameOver,
     /// Generated when an entity is hit by a bullet.

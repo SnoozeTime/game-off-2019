@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.2" tiledversion="1.2.5" orientation="orthogonal" renderorder="right-down" width="50" height="37" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="11">
+<map version="1.2" tiledversion="1.2.5" orientation="orthogonal" renderorder="right-down" width="50" height="37" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="22">
+ <properties>
+  <property name="waves" value="5,10,15"/>
+ </properties>
  <tileset firstgid="1" name="Floor" tilewidth="16" tileheight="16" tilecount="819" columns="21">
   <image source="../../../../ASSETS/DawnLike/Objects/Floor.png" width="336" height="624"/>
  </tileset>
@@ -96,11 +99,6 @@
    <point/>
   </object>
  </objectgroup>
- <objectgroup id="4" name="enemy">
-  <object id="3" name="enemy2" x="417.167" y="466.667">
-   <point/>
-  </object>
- </objectgroup>
  <objectgroup id="6" name="colliders">
   <object id="5" x="96.5304" y="32.3286" width="463.528" height="49.1758"/>
   <object id="6" x="544.577" y="33.2392" width="15.026" height="518.044"/>
@@ -109,6 +107,33 @@
  </objectgroup>
  <objectgroup id="7" name="walkable">
   <object id="9" x="152.76" y="192.817" width="349.65" height="251.205"/>
-  <object id="10" x="200.285" y="143.255" width="255.279" height="348.292"/>
+  <object id="10" x="201.643" y="143.255" width="255.279" height="348.292"/>
+ </objectgroup>
+ <objectgroup id="4" name="enemy"/>
+ <objectgroup id="8" name="spawn">
+  <object id="14" name="spawn8" x="183.503" y="221.757">
+   <point/>
+  </object>
+  <object id="15" name="spawn7" x="179.916" y="414.226">
+   <point/>
+  </object>
+  <object id="16" name="spawn6" x="227.735" y="463.837">
+   <point/>
+  </object>
+  <object id="17" name="spawn5" x="430.365" y="465.033">
+   <point/>
+  </object>
+  <object id="18" name="spawn4" x="476.39" y="421.399">
+   <point/>
+  </object>
+  <object id="19" name="spawn3" x="476.987" y="226.539">
+   <point/>
+  </object>
+  <object id="20" name="spawn2" x="432.756" y="176.33">
+   <point/>
+  </object>
+  <object id="21" name="spawn1" x="227.137" y="176.33">
+   <point/>
+  </object>
  </objectgroup>
 </map>

@@ -36,6 +36,8 @@ specs = "0.15.1"
 specs-derive = "0.4.0"
 tiled = "0.7.2"
 
+rand = "0.7"
+
 
 [features]
 default = ["vulkan"]
