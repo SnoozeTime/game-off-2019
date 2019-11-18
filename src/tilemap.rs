@@ -6,8 +6,8 @@ use crate::states::ARENA_HEIGHT;
 use crate::{
     objects::enemy::EnemySpawner,
     systems::{
-        enemy::EnemyType, Animation, AnimationController, Collider, ColliderObjectType,
-        MyCollisionWorld, Walkable,
+        enemy::EnemyType, spawn::SpawnLocation, Animation, AnimationController, Collider,
+        ColliderObjectType, MyCollisionWorld, Walkable,
     },
     util::load_spritesheet,
     z_layers::*,
@@ -104,6 +104,7 @@ impl Tilemap {
         tilemap.load_props(&map, world, &first_gids, &tileset_names);
         tilemap.load_player_spawn(&map);
         tilemap.load_enemies(&map, world);
+        tilemap.load_spawn(&map, world);
 
         tilemap
     }
@@ -128,6 +129,26 @@ impl Tilemap {
             }
         } else {
             warn!("No `player` layer in loaded tilemap");
+        }
+    }
+
+    fn load_spawn(&mut self, map: &tiled::Map, world: &mut World) {
+        if let Some(ref group) = map
+            .object_groups
+            .iter()
+            .filter(|&g| g.name == String::from("spawn"))
+            .nth(0)
+        {
+            for obj in &group.objects {
+                let (x, y) = convert_tiled_xy(obj.x, obj.y);
+                let loc = Vector2::new(x, y);
+                self.all_entities.push(
+                    world
+                        .create_entity()
+                        .with(SpawnLocation { location: loc })
+                        .build(),
+                );
+            }
         }
     }
 
