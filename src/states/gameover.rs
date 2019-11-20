@@ -67,7 +67,10 @@ impl State<GameData<'static, 'static>, MyEvent> for GameOverState {
                 }
             }
             MyEvent::App(e) => {
-                if let AppEvent::NewDialog(sentences) = e {
+                if let AppEvent::NewDialog {
+                    dialog: sentences, ..
+                } = e
+                {
                     Trans::Push(Box::new(crate::states::DialogState::new(sentences.clone())))
                 } else {
                     Trans::None

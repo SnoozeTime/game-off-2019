@@ -167,16 +167,21 @@ impl<'s> System<'s> for WalkableSystem {
             if let PlayerStatus::Walking = player.state {
                 let mut player_in_area = false;
 
-                let cob = collision_world
-                    .world
-                    .collision_object(collider.handle)
-                    .unwrap();
+                let cob = collision_world.world.collision_object(collider.handle);
+                if let None = cob {
+                    warn!("No collider for the handle in player");
+                    continue;
+                }
+                let cob = cob.unwrap();
                 let aabb = bounding_volume::aabb(cob.shape().as_ref(), cob.position());
                 for (_area, area_collider) in (&walkable_areas, &colliders2).join() {
-                    let aob = collision_world
-                        .world
-                        .collision_object(area_collider.handle)
-                        .unwrap();
+                    let aob = collision_world.world.collision_object(area_collider.handle);
+
+                    if let None = aob {
+                        warn!("No collider for the handle in walkable area");
+                        continue;
+                    }
+                    let aob = aob.unwrap();
                     let area_aabb = bounding_volume::aabb(aob.shape().as_ref(), aob.position());
 
                     if area_aabb.intersects(&aabb) {

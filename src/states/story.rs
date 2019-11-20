@@ -24,10 +24,10 @@ impl State<GameData<'static, 'static>, MyEvent> for StoryState {
     fn on_start(&mut self, data: StateData<GameData>) {
         let world = data.world;
         let events = world.get_mut::<EventChannel<AppEvent>>().unwrap();
-        events.single_write(AppEvent::NewDialog(vec![
-            "First".to_string(),
-            "second".to_string(),
-        ]));
+        events.single_write(AppEvent::NewDialog {
+            dialog: vec!["First".to_string(), "second".to_string()],
+            and_then: None,
+        });
         self.ui_handle =
             Some(world.exec(|mut creator: UiCreator<'_>| creator.create("ui/story.ron", ())));
     }
@@ -58,7 +58,10 @@ impl State<GameData<'static, 'static>, MyEvent> for StoryState {
                 }
             }
             MyEvent::App(e) => {
-                if let AppEvent::NewDialog(sentences) = e {
+                if let AppEvent::NewDialog {
+                    dialog: sentences, ..
+                } = e
+                {
                     Trans::Push(Box::new(crate::states::DialogState::new(sentences.clone())))
                 } else {
                     Trans::None

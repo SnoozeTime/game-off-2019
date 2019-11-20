@@ -15,7 +15,7 @@ use thief_engine::{
     event::{MyEvent, MyEventReader},
     states,
     systems::{
-        attack, health, spawn, wave, AnimationSystem, BulletSystem, CollisionSystemDesc,
+        attack, health, schedule, spawn, wave, AnimationSystem, BulletSystem, CollisionSystemDesc,
         DialogSystem, EnemySystem, MyCollisionWorld, PlayerSystem, WalkableSystem,
     },
 };
@@ -93,7 +93,8 @@ fn main() -> amethyst::Result<()> {
             "health_system",
             &["collision_system"],
         )
-        .with(attack::AttackSystem, "attack_system", &["input_system"]);
+        .with(attack::AttackSystem, "attack_system", &["input_system"])
+        .with(schedule::Scheduler, "scheduler", &[]);
 
     let assets_dir = app_root.join("assets");
     let application = CoreApplication::<_, MyEvent, MyEventReader>::build(

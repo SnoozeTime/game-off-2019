@@ -23,10 +23,9 @@ use amethyst::{
 };
 #[allow(unused_imports)]
 use log::{debug, error, info};
-use std::sync::Arc;
 
 use super::{MyTrans, RuntimeSystemState, ARENA_HEIGHT, ARENA_WIDTH};
-use crate::systems::BulletSpawner;
+use crate::systems::{schedule::ScheduledEvent, BulletSpawner};
 #[derive(Default, Debug)]
 pub struct GameState {
     ui_handle: Option<Entity>,
@@ -81,6 +80,15 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         let waves = wave::Waves::from_config(arena_config);
         world.create_entity().with(waves).build();
 
+        // Just for fun.
+        world
+            .create_entity()
+            .with(ScheduledEvent {
+                timeout: 2.0,
+                event: AppEvent::GameOver,
+            })
+            .build();
+
         //add_bullet(world);
         debug!("Init camera");
         initialize_camera(world);
@@ -98,12 +106,20 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         }
 
         data.world.exec(
-            |(tilemap, mut collisions_world, entities, colliders, player, bullets, enemies): (
+            |(
+                tilemap,
+                mut collisions_world,
+                entities,
+                colliders,
+                mut player,
+                bullets,
+                enemies,
+            ): (
                 Read<tilemap::Tilemap>,
                 Write<MyCollisionWorld>,
                 Entities,
                 ReadStorage<Collider>,
-                Read<PlayerResource>,
+                Write<PlayerResource>,
                 ReadStorage<Bullet>,
                 ReadStorage<Enemy>,
             )| {
@@ -123,6 +139,7 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
                         &mut collisions_world.world,
                     );
                 }
+                player.player = None;
 
                 // remove in flight bullets
                 for (_bullet, entity) in (&bullets, &entities).join() {
@@ -172,7 +189,7 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
                 } = e
                 {
                     if let Some(e) = and_then {
-                        let clone = (*e).clone();
+                        let clone = AppEvent::clone(e);
                         self.resume_event = Some(clone);
                     }
                     Trans::Push(Box::new(crate::states::DialogState::new(sentences.clone())))
