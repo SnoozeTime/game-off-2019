@@ -29,7 +29,7 @@ impl EnemySpawner {
     pub fn init(world: &mut World) -> Self {
         // default implementation assumes all assets are present. Doesn't make sense otherwise...
         let mut textures = HashMap::new();
-        let sprite_sheet = load_spritesheet("Mage", world);
+        let sprite_sheet = load_spritesheet("enemy_simple", world);
         textures.insert(EnemyType::Simple, sprite_sheet);
         Self { textures }
     }
@@ -86,7 +86,7 @@ impl EnemySpawner {
                 //collider.set_entity(&mut collision.world, entity);
                 collider
             };
-            let walking_animations = animations::get_walking_animations();
+            let walking_animations = animations::get_enemy_simplest_animation();
             let mut animation_controller = AnimationController {
                 animations: HashMap::new(),
                 current_animation: None,
