@@ -1,4 +1,5 @@
 // These imports are required for the #[derive(EventReader)] code to build
+use crate::systems::schedule::ScheduledEvent;
 use amethyst::core::{
     ecs::{Entity, Read, SystemData, World},
     shrev::{EventChannel, ReaderId},
@@ -15,7 +16,7 @@ pub enum AppEvent {
     /// DialogOver event and sent by the Game state (not the DialogState) when resuming.
     NewDialog {
         dialog: Vec<String>,
-        and_then: Option<Arc<AppEvent>>,
+        and_then: Option<Arc<ScheduledEvent>>,
     },
     /// Generated when the current dialog is finished
     DialogOver,
@@ -28,6 +29,12 @@ pub enum AppEvent {
     EnemyDied(Entity),
     /// Spawn a certain number of enemies
     SpawnEnemy(i32),
+
+    /// Start the next wave
+    NextWave,
+
+    /// All the waves are finshed. Let's start new arena (or boss :D)
+    NextArena,
 }
 
 #[derive(Debug, EventReader, Clone)]

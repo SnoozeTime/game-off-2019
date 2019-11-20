@@ -30,7 +30,7 @@ use crate::systems::{schedule::ScheduledEvent, BulletSpawner};
 pub struct GameState {
     ui_handle: Option<Entity>,
     /// To send when the state is resumed.
-    resume_event: Option<AppEvent>,
+    resume_event: Option<ScheduledEvent>,
 }
 
 impl State<GameData<'static, 'static>, MyEvent> for GameState {
@@ -81,13 +81,13 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         world.create_entity().with(waves).build();
 
         // Just for fun.
-        world
-            .create_entity()
-            .with(ScheduledEvent {
-                timeout: 2.0,
-                event: AppEvent::GameOver,
-            })
-            .build();
+        //world
+        //    .create_entity()
+        //    .with(ScheduledEvent {
+        //        timeout: 2.0,
+        //        event: AppEvent::GameOver,
+        //    })
+        //    .build();
 
         //add_bullet(world);
         debug!("Init camera");
@@ -98,6 +98,10 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
     fn on_resume(&mut self, data: StateData<GameData>) {
         let world = data.world;
         *world.write_resource() = RuntimeSystemState::Running;
+
+        if let Some(schedule_event) = self.resume_event.take() {
+            world.create_entity().with(schedule_event).build();
+        }
     }
 
     fn on_stop(&mut self, data: StateData<GameData>) {
@@ -183,22 +187,41 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
             MyEvent::App(e) => {
                 // In case the state receives an event for dialog, it will push a DialogState on
                 // top of the stack to pause the gameplay systems.
-                if let AppEvent::NewDialog {
-                    dialog: sentences,
-                    and_then,
-                } = e
-                {
-                    if let Some(e) = and_then {
-                        let clone = AppEvent::clone(e);
-                        self.resume_event = Some(clone);
+                match e {
+                    AppEvent::NewDialog {
+                        dialog: sentences,
+                        and_then,
+                    } => {
+                        if let Some(e) = and_then {
+                            let clone = ScheduledEvent::clone(e);
+                            self.resume_event = Some(clone);
+                        }
+                        Trans::Push(Box::new(crate::states::DialogState::new(sentences.clone())))
                     }
-                    Trans::Push(Box::new(crate::states::DialogState::new(sentences.clone())))
-                } else if let AppEvent::GameOver = e {
-                    Trans::Switch(Box::new(crate::states::GameOverState::default()))
-                } else {
-                    debug!("{:?}", e);
-                    Trans::None
+                    AppEvent::GameOver | AppEvent::NextArena => {
+                        Trans::Switch(Box::new(crate::states::GameOverState::default()))
+                    }
+                    other => {
+                        debug!("{:?}", other);
+                        Trans::None
+                    }
                 }
+                //                if let AppEvent::NewDialog {
+                //                    dialog: sentences,
+                //                    and_then,
+                //                } = e
+                //                {
+                //                    if let Some(e) = and_then {
+                //                        let clone = ScheduledEvent::clone(e);
+                //                        self.resume_event = Some(clone);
+                //                    }
+                //                    Trans::Push(Box::new(crate::states::DialogState::new(sentences.clone())))
+                //                } else if let AppEvent::GameOver = e {
+                //                    Trans::Switch(Box::new(crate::states::GameOverState::default()))
+                //                } else {
+                //                    debug!("{:?}", e);
+                //                    Trans::None
+                //                }
             }
             _ => Trans::None,
         }

@@ -10,7 +10,7 @@ use amethyst::{
 };
 
 use crate::systems::{Collider, ColliderData};
-use log::error;
+use log::{error, warn};
 use ncollide2d::pipeline::world::CollisionWorld;
 
 use std::iter;
@@ -40,7 +40,11 @@ pub fn delete_entity_with_collider(
     world: &mut CollisionWorld<f32, ColliderData>,
 ) {
     if let Some(collider) = colliders.get(entity) {
-        world.remove(&[collider.handle]);
+        if let None = world.collision_object(collider.handle) {
+            warn!("Collision word could not find the handle for the collider. Will not delete otherwise it will panic")
+        } else {
+            world.remove(&[collider.handle]);
+        }
     }
     // what can happen is a wrong generation error. make sure to display the error
     // brightly but the game does not really know how to handle that...
