@@ -65,6 +65,11 @@ impl Waves {
             },
         }
     }
+
+    /// Return true if the current wave is the last for this arena.
+    pub fn last_wave(&self) -> bool {
+        return self.current_wave == self.waves.len() - 1;
+    }
 }
 
 /// not a component. Hold the current wave status.
@@ -166,7 +171,13 @@ impl<'s> System<'s> for WaveSystem {
                             wave.current_enemies -= to_spawn;
                             if wave.current_enemies <= 0 {
                                 info!("WAVE FINISHED!!!");
-                                events.single_write(create_next_wave_ev());
+                                if waves.last_wave() {
+                                    info!("No more wave. Chill mate");
+                                    waves.status = WaveControllerStatus::Finished;
+                                    events.single_write(AppEvent::NextArena);
+                                } else {
+                                    events.single_write(create_next_wave_ev());
+                                }
                             } else {
                                 let enemy_to_spawn = to_spawn.min(wave.enemies_left);
                                 wave.enemies_left -= enemy_to_spawn;
@@ -177,10 +188,6 @@ impl<'s> System<'s> for WaveSystem {
                     }
                     _ => (),
                 }
-            } else {
-                // Current arena is FINISHED. Let's start another.
-                waves.status = WaveControllerStatus::Finished;
-                events.single_write(AppEvent::NextArena);
             }
         }
     }
