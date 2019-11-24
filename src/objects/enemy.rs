@@ -1,6 +1,7 @@
 //! Helpers to create the enemy entities...
 //!
 use crate::{
+    config::EnemyConfig,
     objects::animations,
     systems::{
         enemy::EnemyType, health::Health, AnimationController, Collider, ColliderObjectType, Enemy,
@@ -41,6 +42,7 @@ impl EnemySpawner {
         world: &mut World,
         enemy_type: EnemyType,
         position: Transform,
+        enemy_config: &EnemyConfig,
     ) -> Option<Entity> {
         let mut maybe_entity = None;
         world.exec(
@@ -49,8 +51,14 @@ impl EnemySpawner {
                 Read<LazyUpdate>,
                 Write<MyCollisionWorld>,
             )| {
-                maybe_entity =
-                    self.spawn_enemy(&entities, &updater, &mut collision, enemy_type, position);
+                maybe_entity = self.spawn_enemy(
+                    &entities,
+                    &updater,
+                    &mut collision,
+                    enemy_type,
+                    position,
+                    enemy_config,
+                );
             },
         );
         maybe_entity
@@ -64,6 +72,7 @@ impl EnemySpawner {
         collision: &mut MyCollisionWorld,
         enemy_type: EnemyType,
         position: Transform,
+        enemy_config: &EnemyConfig,
     ) -> Option<Entity> {
         if let Some(handle) = self.textures.get(&enemy_type) {
             let sprite = SpriteRender {
@@ -96,7 +105,7 @@ impl EnemySpawner {
             updater.insert(entity, position);
             updater.insert(entity, animation_controller);
             updater.insert(entity, sprite);
-            updater.insert(entity, Enemy::default());
+            updater.insert(entity, Enemy::from_config(enemy_type, enemy_config));
             updater.insert(entity, collider);
             updater.insert(entity, Health::new(2));
             Some(entity)

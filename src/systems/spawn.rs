@@ -3,6 +3,7 @@
 //!
 //!
 use crate::{
+    config::EnemyConfig,
     event::AppEvent,
     objects::enemy::EnemySpawner,
     systems::{enemy::EnemyType, MyCollisionWorld},
@@ -52,11 +53,12 @@ impl<'s> System<'s> for SpawnSystem {
         Entities<'s>,
         Read<'s, LazyUpdate>,
         Write<'s, MyCollisionWorld>,
+        Read<'s, EnemyConfig>,
     );
 
     fn run(
         &mut self,
-        (locations, events, spawner, entities, updater, mut collision_world): Self::SystemData,
+        (locations, events, spawner, entities, updater, mut collision_world, enemy_config): Self::SystemData,
     ) {
         // only one waves component.
         for ev in events.read(&mut self.reader_id) {
@@ -77,6 +79,7 @@ impl<'s> System<'s> for SpawnSystem {
                                 &mut collision_world,
                                 EnemyType::Simple,
                                 t,
+                                &enemy_config,
                             ) {
                                 error!(
                                     "Could not find enemy {:?} in Spawner - Check init...",

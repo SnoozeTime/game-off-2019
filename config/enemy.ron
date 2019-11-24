@@ -1,0 +1,6 @@
+(
+        simple_enemy: (
+                reload_time: 2.0,
+                bullet_speed: 60.0,
+        )
+)

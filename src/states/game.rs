@@ -3,7 +3,7 @@ use crate::tilemap;
 use crate::util::delete_hierarchy;
 use crate::z_layers::*;
 use crate::{
-    config::ArenaConfig,
+    config::{ArenaConfig, CameraConfig},
     event::{AppEvent, MyEvent},
     objects::{enemy::EnemySpawner, player::create_player},
     systems::{wave, Bullet, Collider, Enemy, MyCollisionWorld, PlayerResource},
@@ -55,7 +55,7 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
         *world.write_resource() = RuntimeSystemState::Running;
 
         debug!("Load tilemap");
-        let tilemap = tilemap::Tilemap::load("arena.tmx", world);
+        let tilemap = tilemap::Tilemap::load("arena1.tmx", world);
         let player_spawn = tilemap.player_spawn.clone();
         world.insert(tilemap);
 
@@ -231,10 +231,14 @@ impl State<GameData<'static, 'static>, MyEvent> for GameState {
 /// Set up camera. Orthographic projection to see an area of 100x100 units
 fn initialize_camera(world: &mut World) {
     let mut transform = Transform::default();
+    let ratio = world.read_resource::<CameraConfig>().ratio;
     transform.set_translation_xyz(ARENA_WIDTH * 0.5, ARENA_HEIGHT * 0.5, 99.0);
     world
         .create_entity()
-        .with(Camera::standard_2d(ARENA_WIDTH, ARENA_HEIGHT))
+        .with(Camera::standard_2d(
+            ratio * ARENA_WIDTH,
+            ratio * ARENA_HEIGHT,
+        ))
         .with(transform)
         .build();
 }

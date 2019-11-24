@@ -11,7 +11,7 @@ use amethyst::{
     utils::application_root_dir,
 };
 use thief_engine::{
-    config::PlayerConfig,
+    config::{CameraConfig, EnemyConfig, PlayerConfig},
     event::{MyEvent, MyEventReader},
     states,
     systems::{
@@ -33,8 +33,12 @@ fn main() -> amethyst::Result<()> {
     let app_root = application_root_dir()?;
 
     let config_path = app_root.join("config").join("player.ron");
+    let arena_config_path = app_root.join("config").join("camera.ron");
+    let enemy_config_path = app_root.join("config").join("enemy.ron");
 
     let player_config = PlayerConfig::load(&config_path);
+    let arena_config = CameraConfig::load(&arena_config_path);
+    let enemy_config = EnemyConfig::load(&enemy_config_path);
     info!("PLAYER CONFIG {:?}", player_config);
     let display_config_path = app_root.join("config").join("display.ron");
     let binding_path = app_root.join("config").join("bindings.ron");
@@ -102,6 +106,8 @@ fn main() -> amethyst::Result<()> {
         states::GameOverState::default(),
     )?
     .with_resource(player_config)
+    .with_resource(arena_config)
+    .with_resource(enemy_config)
     .with_resource(collision_world)
     .build(game_data);
 

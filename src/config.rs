@@ -34,3 +34,34 @@ pub struct WaveConfig {
     pub enemies_in_fly: i32,
     pub total_enemies: i32,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+pub struct CameraConfig {
+    pub ratio: f32,
+}
+
+impl Default for CameraConfig {
+    fn default() -> Self {
+        Self { ratio: 1.0 }
+    }
+}
+
+#[derive(Debug, Default, Deserialize, Serialize, Clone, Copy)]
+pub struct EnemyConfig {
+    pub simple_enemy: SimpleEnemyConfig,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+pub struct SimpleEnemyConfig {
+    pub reload_time: f32,
+    pub bullet_speed: f32,
+}
+
+impl Default for SimpleEnemyConfig {
+    fn default() -> Self {
+        Self {
+            reload_time: 1.0,
+            bullet_speed: 100.0,
+        }
+    }
+}

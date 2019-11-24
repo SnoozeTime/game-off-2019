@@ -103,7 +103,7 @@ impl Tilemap {
         tilemap.load_walkable(&map, world);
         tilemap.load_props(&map, world, &first_gids, &tileset_names);
         tilemap.load_player_spawn(&map);
-        tilemap.load_enemies(&map, world);
+        //tilemap.load_enemies(&map, world);
         tilemap.load_spawn(&map, world);
 
         tilemap
@@ -151,41 +151,41 @@ impl Tilemap {
             }
         }
     }
-
-    fn load_enemies(&mut self, map: &tiled::Map, world: &mut World) {
-        if let Some(ref group) = map
-            .object_groups
-            .iter()
-            .filter(|&g| g.name == String::from("enemy"))
-            .nth(0)
-        {
-            for obj in &group.objects {
-                let (x, y) = convert_tiled_xy(obj.x, obj.y);
-                let mut transform = Transform::default();
-                transform.set_translation_xyz(x + 8.0, y + 8.0, PROPS_LAYER);
-
-                world.exec(
-                    |(entities, updater, mut collision, spawner): (
-                        Entities,
-                        Read<LazyUpdate>,
-                        Write<MyCollisionWorld>,
-                        Read<EnemySpawner>,
-                    )| {
-                        if let Some(entity) = spawner.spawn_enemy(
-                            &entities,
-                            &updater,
-                            &mut collision,
-                            EnemyType::Simple,
-                            transform,
-                        ) {
-                            self.all_entities.push(entity);
-                        }
-                    },
-                );
-            }
-        }
-    }
-
+    //
+    //    fn load_enemies(&mut self, map: &tiled::Map, world: &mut World) {
+    //        if let Some(ref group) = map
+    //            .object_groups
+    //            .iter()
+    //            .filter(|&g| g.name == String::from("enemy"))
+    //            .nth(0)
+    //        {
+    //            for obj in &group.objects {
+    //                let (x, y) = convert_tiled_xy(obj.x, obj.y);
+    //                let mut transform = Transform::default();
+    //                transform.set_translation_xyz(x + 8.0, y + 8.0, PROPS_LAYER);
+    //
+    //                world.exec(
+    //                    |(entities, updater, mut collision, spawner): (
+    //                        Entities,
+    //                        Read<LazyUpdate>,
+    //                        Write<MyCollisionWorld>,
+    //                        Read<EnemySpawner>,
+    //                    )| {
+    //                        if let Some(entity) = spawner.spawn_enemy(
+    //                            &entities,
+    //                            &updater,
+    //                            &mut collision,
+    //                            EnemyType::Simple,
+    //                            transform,
+    //                        ) {
+    //                            self.all_entities.push(entity);
+    //                        }
+    //                    },
+    //                );
+    //            }
+    //        }
+    //    }
+    //
     /// Load the colliders from the map. They are attached as objects in an
     /// object layer called `colliders`
     fn load_walkable(&mut self, map: &tiled::Map, world: &mut World) {
