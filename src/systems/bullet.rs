@@ -221,14 +221,14 @@ impl BulletSpawner {
             let direction = direction.normalize();
             t.prepend_translation(origin);
             t.set_translation_z(20.0);
-            let rot = Rotation2::new(0.01f32);
+            //let rot = Rotation2::new(0.01f32);
             updater.insert(
                 bullet,
                 Bullet {
                     speed,
                     direction,
-                    path_mod: Some(rot),
-                    //path_mod: Some(Isometry2::new(Vector2::new(0.0, 0.0), 0.1)),
+                    path_mod: None, //Some(rot),
+                                    //path_mod: Some(Isometry2::new(Vector2::new(0.0, 0.0), 0.1)),
                 },
             );
             updater.insert(

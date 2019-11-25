@@ -4,10 +4,9 @@
 use crate::components::Obstacle;
 use crate::states::ARENA_HEIGHT;
 use crate::{
-    objects::enemy::EnemySpawner,
     systems::{
-        enemy::EnemyType, spawn::SpawnLocation, Animation, AnimationController, Collider,
-        ColliderObjectType, MyCollisionWorld, Walkable,
+        spawn::SpawnLocation, Animation, AnimationController, Collider, ColliderObjectType,
+        MyCollisionWorld, Walkable,
     },
     util::load_spritesheet,
     z_layers::*,
@@ -19,7 +18,7 @@ use amethyst::{
         math::{geometry::Point2, Vector2},
         transform::Transform,
     },
-    ecs::{Entities, Entity, LazyUpdate, Read, Write},
+    ecs::Entity,
     prelude::*,
     renderer::{debug_drawing::DebugLinesComponent, palette::Srgba, SpriteRender, SpriteSheet},
 };
@@ -227,7 +226,7 @@ impl Tilemap {
                         .create_entity()
                         .with(Walkable)
                         .with(collider)
-                        .with(debug_line)
+                        //.with(debug_line)
                         .build();
 
                     let collision_world = world.get_mut::<MyCollisionWorld>().unwrap();
@@ -280,7 +279,7 @@ impl Tilemap {
                     let entity = world
                         .create_entity()
                         .with(Obstacle { aabb })
-                        .with(debug_line)
+                        //.with(debug_line)
                         .with(collider)
                         .build();
 

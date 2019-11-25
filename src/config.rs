@@ -53,15 +53,25 @@ pub struct EnemyConfig {
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub struct SimpleEnemyConfig {
-    pub reload_time: f32,
     pub bullet_speed: f32,
+
+    /// How long does the enemy walk.
+    pub walk_duration: f32,
+
+    /// Shoot duration. How long does the enemy shoot? It is related to the shooting animation.
+    pub shoot_duration: f32,
+
+    /// how fast the enemy walk.
+    pub walk_speed: f32,
 }
 
 impl Default for SimpleEnemyConfig {
     fn default() -> Self {
         Self {
-            reload_time: 1.0,
             bullet_speed: 100.0,
+            walk_duration: 2.0,
+            shoot_duration: 1.0,
+            walk_speed: 0.2,
         }
     }
 }
