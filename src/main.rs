@@ -11,7 +11,7 @@ use amethyst::{
     utils::application_root_dir,
 };
 use thief_engine::{
-    config::{CameraConfig, EnemyConfig, PlayerConfig},
+    config::{BulletConfig, CameraConfig, EnemyConfig, PlayerConfig},
     event::{MyEvent, MyEventReader},
     states,
     systems::{
@@ -32,14 +32,17 @@ fn main() -> amethyst::Result<()> {
     //amethyst::start_logger(Default::default());
     let app_root = application_root_dir()?;
 
+    // Load all the config files
+    // -----------------------------------------------------
     let config_path = app_root.join("config").join("player.ron");
     let arena_config_path = app_root.join("config").join("camera.ron");
     let enemy_config_path = app_root.join("config").join("enemy.ron");
-
+    let bullet_config_path = app_root.join("config").join("bullet.ron");
     let player_config = PlayerConfig::load(&config_path);
     let arena_config = CameraConfig::load(&arena_config_path);
     let enemy_config = EnemyConfig::load(&enemy_config_path);
-    info!("PLAYER CONFIG {:?}", player_config);
+    let bullet_config = BulletConfig::load(&bullet_config_path);
+
     let display_config_path = app_root.join("config").join("display.ron");
     let binding_path = app_root.join("config").join("bindings.ron");
     let input_bundle =
@@ -108,6 +111,7 @@ fn main() -> amethyst::Result<()> {
     .with_resource(player_config)
     .with_resource(arena_config)
     .with_resource(enemy_config)
+    .with_resource(bullet_config)
     .with_resource(collision_world)
     .build(game_data);
 

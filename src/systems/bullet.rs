@@ -2,6 +2,7 @@
 //! to check whether they hit anything.
 //!
 use crate::{
+    config::BulletConfig,
     error::{GameError, GameResult},
     systems::{Collider, ColliderObjectType, MyCollisionWorld},
     util::load_spritesheet,
@@ -10,15 +11,16 @@ use crate::{
 use amethyst::{
     assets::Handle,
     core::{
-        math::{Vector2, Vector3},
+        math::{Rotation2, Vector2, Vector3},
         timing::Time,
         SystemDesc, Transform,
     },
     derive::SystemDesc,
     ecs::{
-        Component, DenseVecStorage, Entities, Join, LazyUpdate, Read, ReadStorage, System,
-        SystemData, World, WriteStorage,
+        Component, DenseVecStorage, Entities, Join, LazyUpdate, Read, System, SystemData, World,
+        WriteStorage,
     },
+    prelude::*,
     renderer::{SpriteRender, SpriteSheet},
 };
 
@@ -35,6 +37,48 @@ pub struct Bullet {
 
     /// Where it is headed,
     pub direction: Vector2<f32>,
+
+    /// Bullet path (isometry applied to the direction at each update, so make sure it is small :D)
+    pub path_mod: Option<Rotation2<f32>>,
+}
+
+/// Define behavior of a bullet.
+pub enum BulletBehavior {
+    /// Bullet that goes straight
+    Simple { speed: f32, direction: Vector2<f32> },
+
+    /// Bullet that rotations with a path
+    Rotating {
+        speed: f32,
+        direction: Vector2<f32>,
+        rotation: Rotation2<f32>,
+    },
+}
+
+impl BulletBehavior {
+    /// What to apply at each frame.
+    pub fn apply(&mut self, bullet_transform: &mut Transform, time_delta: f32) {
+        match *self {
+            BulletBehavior::Simple {
+                ref speed,
+                ref direction,
+            } => {
+                let delta_mvt = *direction * *speed * time_delta;
+                bullet_transform.prepend_translation_x(delta_mvt.x);
+                bullet_transform.prepend_translation_y(delta_mvt.y);
+            }
+            BulletBehavior::Rotating {
+                ref speed,
+                ref mut direction,
+                ref rotation,
+            } => {
+                let delta_mvt = *direction * *speed * time_delta;
+                bullet_transform.prepend_translation_x(delta_mvt.x);
+                bullet_transform.prepend_translation_y(delta_mvt.y);
+                *direction = *rotation * *direction;
+            }
+        }
+    }
 }
 
 #[derive(SystemDesc)]
@@ -43,12 +87,12 @@ pub struct BulletSystem;
 impl<'s> System<'s> for BulletSystem {
     type SystemData = (
         WriteStorage<'s, Transform>,
-        ReadStorage<'s, Bullet>,
+        WriteStorage<'s, Bullet>,
         Read<'s, Time>,
     );
 
-    fn run(&mut self, (mut transforms, bullets, time): Self::SystemData) {
-        for (bullet, t) in (&bullets, &mut transforms).join() {
+    fn run(&mut self, (mut transforms, mut bullets, time): Self::SystemData) {
+        for (bullet, t) in (&mut bullets, &mut transforms).join() {
             let delta_mvt = bullet.direction * bullet.speed * time.delta_seconds();
             //trace!("Will move bullet by {:?}", delta_mvt);
 
@@ -56,6 +100,12 @@ impl<'s> System<'s> for BulletSystem {
             // and use the move along method
             t.prepend_translation_x(delta_mvt.x);
             t.prepend_translation_y(delta_mvt.y);
+
+            // If we have some rotation to the bullet (yeah that is realistic), we need to change
+            // the direction know.
+            if let Some(modification) = bullet.path_mod {
+                bullet.direction = modification * bullet.direction;
+            }
         }
     }
 }
@@ -71,6 +121,7 @@ pub const SIMPLE_BULLET_IDX: usize = 0;
 #[derive(Debug, Default)]
 pub struct BulletSpawner {
     textures: Vec<Handle<SpriteSheet>>,
+    bullet_config: BulletConfig,
 }
 
 impl BulletSpawner {
@@ -79,7 +130,10 @@ impl BulletSpawner {
     pub fn init(world: &mut World) -> Self {
         let handle = load_spritesheet("bullet", world);
         let textures = vec![handle];
-        Self { textures }
+        Self {
+            textures,
+            bullet_config: *world.read_resource::<BulletConfig>(),
+        }
     }
 
     /// Spawn a new bullet.
@@ -167,7 +221,16 @@ impl BulletSpawner {
             let direction = direction.normalize();
             t.prepend_translation(origin);
             t.set_translation_z(20.0);
-            updater.insert(bullet, Bullet { speed, direction });
+            let rot = Rotation2::new(0.01f32);
+            updater.insert(
+                bullet,
+                Bullet {
+                    speed,
+                    direction,
+                    path_mod: Some(rot),
+                    //path_mod: Some(Isometry2::new(Vector2::new(0.0, 0.0), 0.1)),
+                },
+            );
             updater.insert(
                 bullet,
                 SpriteRender {

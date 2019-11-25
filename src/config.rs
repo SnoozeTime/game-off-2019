@@ -65,3 +65,25 @@ impl Default for SimpleEnemyConfig {
         }
     }
 }
+
+// ---------------------------------------------------------
+
+#[derive(Debug, Default, Deserialize, Serialize, Clone, Copy)]
+pub struct BulletConfig {
+    pub simple_enemy: SimpleBulletConfig,
+    pub rotating_bullet: RotatingBulletConfig,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, Default)]
+pub struct SimpleBulletConfig;
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+pub struct RotatingBulletConfig {
+    rot_per_sec: f32,
+}
+
+impl Default for RotatingBulletConfig {
+    fn default() -> Self {
+        Self { rot_per_sec: 1.0 }
+    }
+}

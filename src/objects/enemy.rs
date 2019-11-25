@@ -23,6 +23,7 @@ use std::collections::HashMap;
 #[derive(Debug, Default)]
 pub struct EnemySpawner {
     textures: HashMap<EnemyType, Handle<SpriteSheet>>,
+    enemy_config: EnemyConfig,
 }
 
 impl EnemySpawner {
@@ -32,7 +33,10 @@ impl EnemySpawner {
         let mut textures = HashMap::new();
         let sprite_sheet = load_spritesheet("enemy_simple", world);
         textures.insert(EnemyType::Simple, sprite_sheet);
-        Self { textures }
+        Self {
+            textures,
+            enemy_config: *world.read_resource::<EnemyConfig>(),
+        }
     }
 
     /// Will spawn an enemy at the given position. This is when the user
@@ -42,7 +46,6 @@ impl EnemySpawner {
         world: &mut World,
         enemy_type: EnemyType,
         position: Transform,
-        enemy_config: &EnemyConfig,
     ) -> Option<Entity> {
         let mut maybe_entity = None;
         world.exec(
@@ -51,14 +54,8 @@ impl EnemySpawner {
                 Read<LazyUpdate>,
                 Write<MyCollisionWorld>,
             )| {
-                maybe_entity = self.spawn_enemy(
-                    &entities,
-                    &updater,
-                    &mut collision,
-                    enemy_type,
-                    position,
-                    enemy_config,
-                );
+                maybe_entity =
+                    self.spawn_enemy(&entities, &updater, &mut collision, enemy_type, position);
             },
         );
         maybe_entity
@@ -72,7 +69,6 @@ impl EnemySpawner {
         collision: &mut MyCollisionWorld,
         enemy_type: EnemyType,
         position: Transform,
-        enemy_config: &EnemyConfig,
     ) -> Option<Entity> {
         if let Some(handle) = self.textures.get(&enemy_type) {
             let sprite = SpriteRender {
@@ -105,7 +101,7 @@ impl EnemySpawner {
             updater.insert(entity, position);
             updater.insert(entity, animation_controller);
             updater.insert(entity, sprite);
-            updater.insert(entity, Enemy::from_config(enemy_type, enemy_config));
+            updater.insert(entity, Enemy::from_config(enemy_type, &self.enemy_config));
             updater.insert(entity, collider);
             updater.insert(entity, Health::new(2));
             Some(entity)
