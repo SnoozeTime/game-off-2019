@@ -5,8 +5,7 @@ use crate::components::Obstacle;
 use crate::states::ARENA_HEIGHT;
 use crate::{
     systems::{
-        spawn::SpawnLocation, Animation, AnimationController, Collider, ColliderObjectType,
-        MyCollisionWorld, Walkable,
+        Animation, AnimationController, Collider, ColliderObjectType, MyCollisionWorld, Walkable,
     },
     util::load_spritesheet,
     z_layers::*,
@@ -35,6 +34,12 @@ pub struct Tilemap {
     pub all_entities: Vec<Entity>,
     /// Initial position for the player
     pub player_spawn: Option<Transform>,
+
+    /// Place where the enemies will spawn.
+    pub spawn_locations: Vec<Vector2<f32>>,
+
+    /// Place where the boss will spawn
+    pub boss_spawn: Option<Vector2<f32>>,
 }
 
 impl Tilemap {
@@ -103,9 +108,23 @@ impl Tilemap {
         tilemap.load_props(&map, world, &first_gids, &tileset_names);
         tilemap.load_player_spawn(&map);
         //tilemap.load_enemies(&map, world);
-        tilemap.load_spawn(&map, world);
+        tilemap.load_spawn(&map);
+
+        tilemap.check_valid();
 
         tilemap
+    }
+
+    /// Will check if all the prerequisites of the map are fulfilled. Will crash hard
+    /// otherwise.
+    pub fn check_valid(&self) {
+        if self.spawn_locations.len() == 0 {
+            panic!("Map should have at least one spawn location");
+        }
+
+        if self.boss_spawn.is_none() {
+            panic!("Map should have a boss spawn");
+        }
     }
 
     /// Player spawn is in its own object layer. There should be only one object
@@ -131,7 +150,7 @@ impl Tilemap {
         }
     }
 
-    fn load_spawn(&mut self, map: &tiled::Map, world: &mut World) {
+    fn load_spawn(&mut self, map: &tiled::Map) {
         if let Some(ref group) = map
             .object_groups
             .iter()
@@ -141,12 +160,18 @@ impl Tilemap {
             for obj in &group.objects {
                 let (x, y) = convert_tiled_xy(obj.x, obj.y);
                 let loc = Vector2::new(x, y);
-                self.all_entities.push(
-                    world
-                        .create_entity()
-                        .with(SpawnLocation { location: loc })
-                        .build(),
-                );
+
+                if obj.obj_type.to_lowercase() == "boss" {
+                    self.boss_spawn = Some(loc);
+                } else {
+                    self.spawn_locations.push(loc);
+                }
+                //                self.all_entities.push(
+                //                    world
+                //                        .create_entity()
+                //                        .with(SpawnLocation { location: loc })
+                //                        .build(),
+                //                );
             }
         }
     }

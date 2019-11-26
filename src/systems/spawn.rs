@@ -6,6 +6,7 @@ use crate::{
     event::AppEvent,
     objects::enemy::EnemySpawner,
     systems::{enemy::EnemyType, MyCollisionWorld},
+    tilemap::Tilemap,
     z_layers::PROPS_LAYER,
 };
 use amethyst::{
@@ -15,10 +16,7 @@ use amethyst::{
         SystemDesc, Transform,
     },
     derive::SystemDesc,
-    ecs::{
-        Component, Entities, Join, LazyUpdate, Read, ReadStorage, System, SystemData, VecStorage,
-        World, Write,
-    },
+    ecs::{Component, Entities, LazyUpdate, Read, System, SystemData, VecStorage, World, Write},
 };
 use log::{error, info};
 use rand::seq::SliceRandom;
@@ -45,7 +43,7 @@ impl SpawnSystem {
 
 impl<'s> System<'s> for SpawnSystem {
     type SystemData = (
-        ReadStorage<'s, SpawnLocation>,
+        Read<'s, Tilemap>,
         Read<'s, EventChannel<AppEvent>>,
         // For spawning enemies.
         Read<'s, EnemySpawner>,
@@ -56,7 +54,7 @@ impl<'s> System<'s> for SpawnSystem {
 
     fn run(
         &mut self,
-        (locations, events, spawner, entities, updater, mut collision_world): Self::SystemData,
+        (tilemap, events, spawner, entities, updater, mut collision_world): Self::SystemData,
     ) {
         // only one waves component.
         for ev in events.read(&mut self.reader_id) {
@@ -64,10 +62,9 @@ impl<'s> System<'s> for SpawnSystem {
                 AppEvent::SpawnEnemy(x) => {
                     info!("Spawn {} enemies", x);
                     let mut rng = rand::thread_rng();
-                    let locations = (&locations).join().collect::<Vec<_>>();
                     for _ in 0..*x {
-                        let location = locations.choose(&mut rng);
-                        if let Some(SpawnLocation { location }) = location {
+                        let location = tilemap.spawn_locations.choose(&mut rng);
+                        if let Some(location) = location {
                             println!("Will spawn at loc {:?}", location);
                             let mut t = Transform::default();
                             t.append_translation_xyz(location.x, location.y, PROPS_LAYER);
@@ -86,6 +83,20 @@ impl<'s> System<'s> for SpawnSystem {
                         } else {
                             error!("Spawner cannot choose a location. Make sure there are some setup...");
                         }
+                    }
+                }
+                AppEvent::SpawnBoss => {
+                    let boss_spawn = tilemap.boss_spawn.as_ref().unwrap();
+                    let mut t = Transform::default();
+                    t.append_translation_xyz(boss_spawn.x, boss_spawn.y, PROPS_LAYER);
+                    if let None = spawner.spawn_enemy(
+                        &entities,
+                        &updater,
+                        &mut collision_world,
+                        EnemyType::CreepyFirstBoss,
+                        t,
+                    ) {
+                        error!("Could not spawn my creepy boss");
                     }
                 }
                 _ => (),

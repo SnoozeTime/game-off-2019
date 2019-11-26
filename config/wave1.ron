@@ -1,6 +1,6 @@
 (
         waves: [
                 (total_enemies: 3, enemies_in_fly: 2), 
-                (total_enemies: 5, enemies_in_fly: 5), 
+                (total_enemies: 1, enemies_in_fly: 5), 
         ]
 )

@@ -33,6 +33,9 @@ pub enum AppEvent {
     /// Start the next wave
     NextWave,
 
+    /// ITS TIME!
+    SpawnBoss,
+
     /// All the waves are finshed. Let's start new arena (or boss :D)
     NextArena,
 }

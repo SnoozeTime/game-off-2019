@@ -33,6 +33,7 @@ pub enum EnemyStatus {
 pub enum EnemyType {
     /// Most basic enemy. Follow and shoot.
     Simple,
+    CreepyFirstBoss,
 }
 
 #[derive(Debug, Clone, Copy, Component)]
@@ -43,13 +44,16 @@ pub enum Enemy {
 }
 
 impl Enemy {
-    pub fn from_config(_enemy_type: EnemyType, config: &EnemyConfig) -> Self {
-        Enemy::Simple(SimpleEnemy {
-            bullet_speed: config.simple_enemy.bullet_speed,
-            walk_duration: config.simple_enemy.walk_duration,
-            shoot_duration: config.simple_enemy.shoot_duration,
-            ..SimpleEnemy::default()
-        })
+    pub fn from_config(enemy_type: EnemyType, config: &EnemyConfig) -> Self {
+        match enemy_type {
+            EnemyType::Simple => Enemy::Simple(SimpleEnemy {
+                bullet_speed: config.simple_enemy.bullet_speed,
+                walk_duration: config.simple_enemy.walk_duration,
+                shoot_duration: config.simple_enemy.shoot_duration,
+                ..SimpleEnemy::default()
+            }),
+            EnemyType::CreepyFirstBoss => Enemy::CreepyFirstBoss,
+        }
     }
 
     /// What to do every frame

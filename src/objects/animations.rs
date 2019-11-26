@@ -3,6 +3,7 @@
 use crate::systems::Animation;
 use std::collections::HashMap;
 
+use crate::systems::enemy::EnemyType;
 /// Basic 4-direction walk animation.
 pub fn get_walking_animations() -> HashMap<String, Animation> {
     let down_animation = Animation {
@@ -77,4 +78,12 @@ pub fn get_enemy_simplest_animation() -> HashMap<String, Animation> {
     animations.insert("shoot".to_string(), shoot_animation);
 
     animations
+}
+
+/// Will return the correct animation controller for each enemy.
+pub fn get_enemy_anim(enemy_type: EnemyType) -> Option<HashMap<String, Animation>> {
+    match enemy_type {
+        EnemyType::Simple => Some(get_enemy_simplest_animation()),
+        _ => None,
+    }
 }

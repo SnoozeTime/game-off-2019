@@ -32,7 +32,9 @@ impl EnemySpawner {
         // default implementation assumes all assets are present. Doesn't make sense otherwise...
         let mut textures = HashMap::new();
         let sprite_sheet = load_spritesheet("enemy_simple", world);
+        let boss = load_spritesheet("boss_1", world);
         textures.insert(EnemyType::Simple, sprite_sheet);
+        textures.insert(EnemyType::CreepyFirstBoss, boss);
         Self {
             textures,
             enemy_config: *world.read_resource::<EnemyConfig>(),
@@ -91,15 +93,16 @@ impl EnemySpawner {
                 //collider.set_entity(&mut collision.world, entity);
                 collider
             };
-            let walking_animations = animations::get_enemy_simplest_animation();
-            let mut animation_controller = AnimationController {
-                animations: HashMap::new(),
-                current_animation: None,
-            };
-            animation_controller.animations.extend(walking_animations);
-
+            let walking_animations = animations::get_enemy_anim(enemy_type);
+            if let Some(walking_animations) = walking_animations {
+                let mut animation_controller = AnimationController {
+                    animations: HashMap::new(),
+                    current_animation: None,
+                };
+                animation_controller.animations.extend(walking_animations);
+                updater.insert(entity, animation_controller);
+            }
             updater.insert(entity, position);
-            updater.insert(entity, animation_controller);
             updater.insert(entity, sprite);
             updater.insert(entity, Enemy::from_config(enemy_type, &self.enemy_config));
             updater.insert(entity, collider);

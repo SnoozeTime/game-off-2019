@@ -68,6 +68,10 @@ impl Waves {
 
     /// Return true if the current wave is the last for this arena.
     pub fn last_wave(&self) -> bool {
+        return self.current_wave == self.waves.len() - 2;
+    }
+
+    pub fn boss_wave(&self) -> bool {
         return self.current_wave == self.waves.len() - 1;
     }
 }
@@ -137,10 +141,19 @@ impl<'s> System<'s> for WaveSystem {
                     debug!("Enemy died :D");
                     to_spawn += 1;
                 }
-                AppEvent::NextWave => {
+                AppEvent::NextWave | AppEvent::SpawnBoss => {
                     // Next wave ! If no more wave. then just stop :D
                     if let Some(ref mut waves) = (&mut waves).join().next() {
                         waves.current_wave += 1;
+                        // Exception in case of the boss wave. We don't really care about
+                        // the wave content (TODO modify the config to have an enum that
+                        // specify either normal wave or boss wave).
+                        if waves.boss_wave() {
+                            let mut boss_wave = waves.waves.get_mut(waves.current_wave).unwrap(); // should not fail as the if condition is true.
+                                                                                                  // Prevent the spawnEnemy event. The boss will be spawned directly
+                                                                                                  // thanks to SpawnBoss event.
+                            boss_wave.status = WaveStatus::Running;
+                        }
                     }
                 }
                 _ => (),
@@ -174,7 +187,7 @@ impl<'s> System<'s> for WaveSystem {
                                 if waves.last_wave() {
                                     info!("No more wave. Chill mate");
                                     waves.status = WaveControllerStatus::Finished;
-                                    events.single_write(AppEvent::NextArena);
+                                    events.single_write(spawn_boss());
                                 } else {
                                     events.single_write(create_next_wave_ev());
                                 }
@@ -190,6 +203,17 @@ impl<'s> System<'s> for WaveSystem {
                 }
             }
         }
+    }
+}
+
+fn spawn_boss() -> AppEvent {
+    AppEvent::NewDialog {
+        dialog: vec![String::from("Boss incoming...")],
+        and_then: Some(Arc::new(ScheduledEvent {
+            event: AppEvent::SpawnBoss,
+            timeout: 3.0,
+        })),
+        //
     }
 }
 
