@@ -4,5 +4,11 @@
                 walk_duration: 2.0,
                 shoot_duration: 1.0,
                 walk_speed: 0.3,
-        )
+                health: 2,
+        ),
+        creepy_boss: (
+                health: 10,
+                collider_size: 48,
+                bullet_spawn: 4,
+        ),
 )

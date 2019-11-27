@@ -18,6 +18,11 @@ use amethyst::{
 };
 use std::collections::HashMap;
 
+mod simple_enemy;
+pub use simple_enemy::SimpleEnemy;
+mod creepy_boss;
+pub use creepy_boss::CreepyFirstBoss;
+
 /// Enemy spawner will help creating new enemies. It hold the necessary asset handles (e.g.
 /// textures, animation,...) necessary to create new enemies.
 #[derive(Debug, Default)]
@@ -79,20 +84,6 @@ impl EnemySpawner {
             };
 
             let entity = entities.create();
-
-            let collider = {
-                let collider = Collider::new_rect(
-                    Vector2::new(0.0, 0.0),
-                    16.0,
-                    16.0,
-                    &mut collision.world,
-                    ColliderObjectType::Enemy,
-                    None,
-                    Some(entity),
-                );
-                //collider.set_entity(&mut collision.world, entity);
-                collider
-            };
             let walking_animations = animations::get_enemy_anim(enemy_type);
             if let Some(walking_animations) = walking_animations {
                 let mut animation_controller = AnimationController {
@@ -105,11 +96,52 @@ impl EnemySpawner {
             updater.insert(entity, position);
             updater.insert(entity, sprite);
             updater.insert(entity, Enemy::from_config(enemy_type, &self.enemy_config));
-            updater.insert(entity, collider);
-            updater.insert(entity, Health::new(2));
+            //updater.insert(entity, collider);
+            self.add_collider(updater, entity, collision, enemy_type);
+            self.add_health(updater, entity, enemy_type);
             Some(entity)
         } else {
             None
         }
+    }
+
+    fn add_health(&self, updater: &LazyUpdate, entity: Entity, enemy_type: EnemyType) {
+        match enemy_type {
+            EnemyType::CreepyFirstBoss => {
+                updater.insert(entity, Health::new(self.enemy_config.creepy_boss.health))
+            }
+
+            EnemyType::Simple => {
+                updater.insert(entity, Health::new(self.enemy_config.simple_enemy.health))
+            }
+        }
+    }
+
+    fn add_collider(
+        &self,
+        updater: &LazyUpdate,
+        entity: Entity,
+        collision: &mut MyCollisionWorld,
+        enemy_type: EnemyType,
+    ) {
+        let w = if let EnemyType::CreepyFirstBoss = enemy_type {
+            self.enemy_config.creepy_boss.collider_size
+        } else {
+            16.0
+        };
+        let collider = {
+            let collider = Collider::new_rect(
+                Vector2::new(0.0, 0.0),
+                w,
+                w,
+                &mut collision.world,
+                ColliderObjectType::Enemy,
+                None,
+                Some(entity),
+            );
+            //collider.set_entity(&mut collision.world, entity);
+            collider
+        };
+        updater.insert(entity, collider);
     }
 }

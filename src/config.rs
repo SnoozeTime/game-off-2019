@@ -49,6 +49,7 @@ impl Default for CameraConfig {
 #[derive(Debug, Default, Deserialize, Serialize, Clone, Copy)]
 pub struct EnemyConfig {
     pub simple_enemy: SimpleEnemyConfig,
+    pub creepy_boss: CreepyFirstBossConfig,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
@@ -63,6 +64,8 @@ pub struct SimpleEnemyConfig {
 
     /// how fast the enemy walk.
     pub walk_speed: f32,
+
+    pub health: i32,
 }
 
 impl Default for SimpleEnemyConfig {
@@ -72,6 +75,26 @@ impl Default for SimpleEnemyConfig {
             walk_duration: 2.0,
             shoot_duration: 1.0,
             walk_speed: 0.2,
+            health: 2,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+pub struct CreepyFirstBossConfig {
+    pub health: i32,
+    pub collider_size: f32,
+    /// nb of places where the boss will shoot the bullet.
+    /// Distributed around him
+    pub bullet_spawn: usize,
+}
+
+impl Default for CreepyFirstBossConfig {
+    fn default() -> Self {
+        Self {
+            health: 10,
+            collider_size: 48.0,
+            bullet_spawn: 4,
         }
     }
 }

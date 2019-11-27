@@ -5,9 +5,9 @@ pub use bullet::*;
 pub use collision::*;
 pub use enemy::{Enemy, EnemySystem};
 
-mod animation;
+pub mod animation;
 pub mod attack;
-mod bullet;
+pub mod bullet;
 mod collision;
 mod dialog;
 pub mod enemy;
